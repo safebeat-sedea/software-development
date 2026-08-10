@@ -8,7 +8,7 @@ alwaysApply: false
 
 # Mission plan
 
-**Execution model:** Squad Leader inventories GitHub vulnerability alerts with **`gh`**, triages recommended fixes with the developer, applies (or plans) lockfile/code patches using **`app/backend/README.md`** and **`app/frontend/README.md`** vulnerability sections, then reuses plan-and-deliver **`new-plan`** / **`pr-plan`** / **`coding-session`** for hosting-repo ship when product changes are required. **Forbidden:** inventing patch procedures that contradict those READMEs; Squad Leader proposing dispatch resolution without documenting residual open alerts in scope.
+**Execution model:** Squad Leader inventories GitHub vulnerability alerts with **`gh`**, triages recommended fixes with the developer, applies (or plans) lockfile/code patches using each scoped product repo’s **`backend/README.md`** and **`frontend/README.md`** vulnerability sections, then reuses plan-and-deliver **`new-plan`** / **`pr-plan`** / **`coding-session`** to ship changes in **that product repo** when product changes are required. **Forbidden:** inventing patch procedures that contradict those READMEs; treating hosting **`HOSTING_ROOT`** / `safebeat-sedea/sedea-app` as the remediation tree; Squad Leader proposing dispatch resolution without documenting residual open alerts in scope.
 
 **Skill reuse:** [`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/`](.sedea/centers/research-and-development/missions/plan-and-deliver/skills/) — **`new-plan`**, **`pr-plan`**, **`coding-session`**, **`pr-review`**. Spawn contracts: [`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md`](.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md). Low-complexity single-PR patches may follow [quick-fix](.sedea/centers/research-and-development/missions/quick-fix/plan.mdc) constraints (complexity ≤6) when the developer confirms.
 
@@ -17,7 +17,7 @@ alwaysApply: false
 | Constraint | Rule |
 |------------|------|
 | **Inventory source** | Prefer **`gh`** (`gh api` / Dependabot / code-scanning / advisory surfaces available to the authenticated user) over manual guesswork |
-| **Patch procedures** | Backend transitive lock patches: [`app/backend/README.md`](../../../../../app/backend/README.md) § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: [`app/frontend/README.md`](../../../../../app/frontend/README.md) § *Vulnerability version patches directly in yarn.lock* |
+| **Patch procedures** | Backend transitive lock patches: each product repo’s `backend/README.md` § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: that repo’s `frontend/README.md` § *Vulnerability version patches directly in yarn.lock*. Apply under the scoped **`safebeat/app`** or **`safebeat/ucsf-study`** tree — **not** hosting-repo `app/` paths. |
 | **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single repo only when the opening message or triage pick names one. |
 | **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
 | **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
@@ -148,27 +148,27 @@ USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguo
 
 - **Type:** Branching logic
 - **Intent:** Apply approved patches or hand off to planning/ship.
-- **Inputs:** `applySet`; [`app/backend/README.md`](../../../../../app/backend/README.md); [`app/frontend/README.md`](../../../../../app/frontend/README.md).
-- **Expected output:** Applied lockfile/code changes on a hosting **`WORKTREE_ROOT`**, or spawn inputs for §5.
+- **Inputs:** `applySet`; for each alert’s `owner/repo`, that product repo’s `backend/README.md` and/or `frontend/README.md` vulnerability sections (see **Patch procedures**).
+- **Expected output:** Applied lockfile/code changes in a **product-repo** worktree for `safebeat/app` or `safebeat/ucsf-study`, or spawn inputs for §5 targeting that product repo. **Forbidden:** defaulting remediation writes to hosting-repo `app/` under **`HOSTING_ROOT`**.
 - **Next-step resolution:** Small lockfile-only patch ready to plan/ship → §5. Procedure blocked → USER_CHECKPOINT below.
 
 USER_CHECKPOINT — choose how to proceed when README procedure fails or scope exceeds a single PR.
 
 **Binding patch procedures**
 
-**Backend (Poetry transitive lock patch)** — follow README exactly:
+**Backend (Poetry transitive lock patch)** — in the product repo’s `backend/` (or documented Poetry root), follow that repo’s README exactly:
 
 1. `poetry add --lock <transitive-dependency>==<desired_version>`
 2. Remove the temporary direct dependency: `poetry remove <transitive-dependency>`
 
-**Frontend (Yarn lock patch)** — follow README exactly:
+**Frontend (Yarn lock patch)** — in the product repo’s `frontend/` (or documented Yarn root), follow that repo’s README exactly:
 
 1. Find the package version entry in `yarn.lock`.
 2. Leave the dependency reference line; update `version` and `resolution` to the desired version.
 3. Delete the `checksum` line.
 4. Run `yarn install --mode update-lockfile`.
 
-**Hosting-repo ship cadence:** Before tracked writes, run [worktree-setup](.sedea/centers/sedea/skills/worktree-setup/SKILL.md) when this pass has no **`WORKTREE_ROOT`**. Edits only under **`WORKTREE_ROOT`**.
+**Product-repo ship cadence:** Before tracked writes in `safebeat/app` or `safebeat/ucsf-study`, use that product repo’s worktree / ship flow via §5 **`coding-session`** (same order as plan-and-deliver). **Forbidden:** treating hosting-repo **`WORKTREE_ROOT`** setup as the place to edit product lockfiles unless the developer explicitly scopes a hosting gitlink-only change.
 
 When complexity or blast radius warrants a formal PR plan (multiple packages, tests, or >6 complexity), continue to §5. When the developer already authorized a minimal single-PR path, still use §5 so **`coding-session`** owns the ship chain.
 
