@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Efficient PR shipping
 
-**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/research-and-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole R&D `alwaysApply: true` bootstrap. Read **this file** when you need worktrees, commit/push cadence, ship chain, and PR creation gates — not on every dispatch warm-up.
+**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/software-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole Software Development `alwaysApply: true` bootstrap. Read **this file** when you need worktrees, commit/push cadence, ship chain, and PR creation gates — not on every dispatch warm-up.
 
 Sedea's workflow for shipping multi-PR plans fast.
 
@@ -17,14 +17,16 @@ User-facing git execution for implementation and ship uses **worktrees** only �
 
 **Do not remove, detach, or prune worktrees you do not own.** Canonical preconditions and forbidden patterns: [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Worktree ownership*; [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Post-merge worktree cleanup*; rule **7** § *After PR merge (worktree cleanup)*.
 
-On every R&D ship lane (**`coding-session`**, **`plan-reconcile`** §5 fallback, Squad Leader handoff), **`git worktree remove`**, **`git worktree prune`**, and **`sedea_remove_worktree_folder`** apply **only** to **`WORKTREE_ROOT`** for **this pass** when **all** of the following hold:
+On every Software Development ship lane (**`coding-session`**, **`plan-reconcile`** §5 fallback, Squad Leader handoff), **`git worktree remove`**, **`git worktree prune`**, and **`sedea_remove_worktree_folder`** apply **only** to **`WORKTREE_ROOT`** for **this pass** when **all** of the following hold:
 
 | # | Precondition |
 |---|--------------|
-| **1** | **This pass** ran center **`worktree-setup.sh`** for that absolute path (layer 2 worktree-open on **`coding-session`**, or mission-owned git on this lane). |
-| **2** | **`WORKTREE_ROOT`** is the **exact** path from that step — **not** inferred from **`git worktree list`**, plan sidecar **`worktrees[]`**, or “stale” entries alone. |
-| **3** | **`sedea_remove_worktree_folder`** runs **only** when **this pass** called **`sedea_add_worktree_folder`** for **that same** path. |
+| **1** | **This pass** ran center **`worktree-setup.sh`** for that absolute path (layer 2 worktree-open on **`coding-session`**, or mission-owned git on this lane) — **or** spawn/handoff [Inherited worktree ownership](missions/plan-and-deliver/skills/coding-session/SKILL.md#inherited-worktree-ownership-upstream-handoff-binding) (`worktreeOwnership: inherited` + absolute **`worktreePath`** from the upstream creator, e.g. **`debug-and-fix`**). |
+| **2** | **`WORKTREE_ROOT`** is the **exact** path from that setup step **or** the inherited **`inputs.worktreePath`** — **not** inferred from **`git worktree list`**, plan sidecar **`worktrees[]`**, or “stale” entries alone. |
+| **3** | **`sedea_remove_worktree_folder`** runs **only** when **this pass** called **`sedea_add_worktree_folder`** for **that same** path — **or** inherited handoff set **`mountedViaMcp: true`** (upstream already mounted) **or** this pass attached that same inherited path once. |
 | **4** | The developer confirmed **this** PR merged **or** explicitly approved removing **this** path (structured choice or clear wording in the **same** message). |
+
+**Inherited handoff:** When precondition **1** is satisfied via inheritance, treat cleanup auto-apply the same as create-own Path A for **that path only**. **Forbidden:** treating remount-only reuse of an inherited path as “ownership unclear.”
 
 **Forbidden (agent failure):**
 
@@ -51,22 +53,28 @@ When the Squad Leader receives an implementation request, PR review, or cross-re
 
 ## Hosting repo cwd for scripts (canonical)
 
-R&D automation scripts **`plan-state.mjs`** and **`plan-ws-completeness.mjs`** live under **`.sedea/centers/research-and-development/missions/plan-and-deliver/scripts/`** in the **hosting repo** whose root contains **`.sedea/`** (and usually **`.sedea/centers/sedea/`**). Canonical **`pr-review.mjs`** lives under **`.sedea/centers/sedea/scripts/`** — see § *`pr-review.mjs`* below.
+Software Development automation scripts **`plan-state.mjs`** and **`plan-ws-completeness.mjs`** live under **`.sedea/centers/software-development/missions/plan-and-deliver/scripts/`** in the **hosting repo** whose root contains **`.sedea/`** (and usually **`.sedea/centers/sedea/`**). Canonical **`pr-review.mjs`** lives under **`.sedea/centers/sedea/scripts/`** — see § *`pr-review.mjs`* below.
 
 **Hosting repo worktrees** (`git worktree add` for `user-auth`, `payments-web`, etc.) often have a **different** `git rev-parse --show-toplevel` and **no** `.sedea/centers/` tree. Do **not** derive script paths from the worktree root alone.
 
 ### Resolve `HOSTING_ROOT`
 
-Before any `node …/plan-state.mjs` or `node …/pr-review.mjs` invocation:
+Before any **`plan-state.mjs`**, **`plan-ws-completeness.mjs`**, or **`pr-review.mjs`** invocation through **`.sedea/centers/sedea/scripts/run-sedea-node.sh`** (never bare **`node`**):
 
 1. Start from the hosting repo worktree or primary hosting repo cwd.
 2. Walk **up** parent directories until **`.sedea/centers/sedea/`** exists (preferred) or at minimum **`.sedea/`** at the hosting repo root.
 3. Set **`HOSTING_ROOT`** to that directory (parent of `.sedea/`).
-4. **`cd "$HOSTING_ROOT"`** for every script shell line; use repo-relative paths from there (for example `.sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs`).
+4. **`cd "$HOSTING_ROOT"`** for every script shell line; use repo-relative paths from there (for example `.sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs`).
 
 When the agent already knows the Mission Control primary hosting repo path, set **`HOSTING_ROOT`** explicitly instead of guessing.
 
 5. If no ancestor contains **`.sedea/`**, **stop** — use **AskQuestion** once for the hosting repo root (absolute path). Do not run **`plan-state.mjs`**, **`plan-ws-completeness.mjs`**, or **`pr-review.mjs`** from a worktree path alone.
+
+### Node launcher (`plan-state.mjs` / `plan-ws-completeness.mjs`)
+
+Invoke **`plan-state.mjs`** and **`plan-ws-completeness.mjs`** through **`.sedea/centers/sedea/scripts/run-sedea-node.sh`** — **never** bare **`node`**. The wrapper sources **`resolve-node.sh`** (Electron-as-Node in Sedea agent shells).
+
+**Forbidden fallbacks when the wrapper exits non-zero:** **`brew install node`** / other package-manager Node installs; **fnm** / **nvm** bootstrap to unblock agent governance scripts; borrowing Node from another application (Codex.app, foreign Electron, etc.). **Stop and ask** the developer via structured choice — do not improvise a runtime.
 
 ### Worktree context for `resolve --cwd`
 
@@ -76,7 +84,7 @@ When linking a plan to a worktree, pass the **worktree** path to **`resolve --cw
 WORKTREE_ROOT="$(pwd)"   # after cd into the hosting repo worktree
 cd "$HOSTING_ROOT"
 
-node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   resolve --cwd "$WORKTREE_ROOT"
 ```
 
@@ -84,22 +92,26 @@ For **`upsert-pr --repo`**, use **`$(basename "$HOSTING_ROOT")`** — the **host
 
 ### `pr-review.mjs`
 
-Run **`node .sedea/centers/sedea/scripts/pr-review.mjs`** with **`cd "$HOSTING_ROOT"`** (two-step **`PR_REVIEW_INPUT`** per [`pr-review/SKILL.md`](../missions/plan-and-deliver/skills/pr-review/SKILL.md)). Git / `gh` in **`pr-review`** Step 0 may use the **hosting repo worktree**; the script binary path must not assume `.sedea/` exists under the worktree root.
+Run **`.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs`** with **`cd "$HOSTING_ROOT"`** (two-step **`PR_REVIEW_INPUT`** per [`pr-review/SKILL.md`](../missions/plan-and-deliver/skills/pr-review/SKILL.md)). **Never** bare **`node`** for **`pr-review.mjs`** — the wrapper sources **`resolve-node.sh`**.
 
-### Forbidden pattern
+**Forbidden fallbacks when the wrapper exits non-zero:** **`brew install node`** / other package-manager Node installs; **fnm** / **nvm** bootstrap to unblock agent scripts; borrowing Node from another application. **Stop and ask** the developer via structured choice — do not improvise a runtime.
+
+Git / `gh` in **`pr-review`** Step 0 may use the **hosting repo worktree**; the script binary path must not assume `.sedea/` exists under the worktree root.
+
+### Forbidden pattern (anti-example — do not copy)
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"   # worktree — often wrong for Sedea scripts
-node "$ROOT/.sedea/centers/.../plan-state.mjs" ...
+node "$ROOT/.sedea/centers/.../plan-state.mjs" ...   # forbidden: bare node + wrong root
 ```
 
 Use **`HOSTING_ROOT`** plus a repo-relative script path from the hosting repo, or an absolute path to the script file under **`HOSTING_ROOT`**.
 
 ### Operations plan files (binding)
 
-**Forbidden:** editing `.plan.md` or `.state.yaml` under **worktree** `.sedea/operations/`. Plan Board authority lives on **`HOSTING_ROOT`** only. Worktree bootstrap may copy operations for read-only context; all plan/sidecar writes target primary paths. See **`coding-session/SKILL.md`** § *Plan and sidecar IO (binding)* and **0_hosting-repo.mdc** § *Operations persistence (main hosting root only)*.
+**Forbidden:** editing `.plan.md` or `.state.yaml` under **worktree** `.sedea/operations/`. Operations plan authority lives on **`HOSTING_ROOT`** only. Worktree bootstrap may copy operations for read-only context; all plan/sidecar writes target primary paths. See **`coding-session/SKILL.md`** § *Plan and sidecar IO (binding)* and **0_hosting-repo.mdc** § *Operations persistence (main hosting root only)*.
 
-Cross-refs: [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](31_dispatch-scope.mdc) § *Worked example*; [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc).
+Cross-refs: [`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`](31_dispatch-scope.mdc) § *Worked example*; [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc).
 
 ## Plan for independence
 
@@ -118,13 +130,17 @@ We work with **git worktrees** (one per PR) so we can have several PRs in flight
 - Do **not** stack worktrees or PRs unless the developer explicitly asks for it.
 - When a PR is done, open it for review; the next independent PR is already being worked on in another worktree.
 
+## Batch ship approval (Checkpoint)
+
+When **`coding-session`** tracks **`openPrBatch.length > 1`**, one **`approve-ship-batch`** gate authorizes review → CI remediation → rebase → merge → pin promotion → worktree cleanup → **`HOSTING_ROOT`** refresh for **all** rows — per [`.sedea/centers/sedea/docs/batch-ship-checkpoint-profile.md`](.sedea/centers/sedea/docs/batch-ship-checkpoint-profile.md). **Forbidden** on the clean batch path: per-PR post-create-pr modals and per-PR **`pr-review`** disposition modals. Manual **After deploy** §7 steps remain a separate Checkpoint gate per **`coding-session`** three-stop model stop **3**.
+
 ## Review before commit
 
 After implementing changes, **stop**. Do not `git add`, `git commit`, or `git push` until the developer explicitly confirms that we are ready to move on to the next development stage.
 
 - Present a summary of what changed and ask for next steps using `AskQuestion`. 
 - This applies to **all** workflows: feature PRs, PR comment fixes, and any other code changes.
-- **Pre-review verification (hosting repo):** Before the summary and review modal / ship cut-point, complete **pre-review verification** prescribed by applicable **hosting-repo** **`.cursor/rules/*.mdc`** files. Resolve which rules apply from the PR plan **§5**, **Project rules** curation in **`coding-session`**, or rules already loaded from the worktree — per [`.sedea/centers/research-and-development/rules/40_maintain-rules.mdc`](40_maintain-rules.mdc). Do **not** duplicate hosting-repo commands in center rules or skills. Do not open developer review until prescribed verification passes (**exit 0**); fix failures and re-run.
+- **Pre-review verification (hosting repo):** Before the summary and review modal / ship cut-point, complete **pre-review verification** prescribed by applicable **hosting-repo** **`.cursor/rules/*.mdc`** files. Resolve which rules apply from the PR plan **§5**, **Project rules** curation in **`coding-session`**, or rules already loaded from the worktree — per [`.sedea/centers/software-development/rules/40_maintain-rules.mdc`](40_maintain-rules.mdc). Do **not** duplicate hosting-repo commands in center rules or skills. Do not open developer review until prescribed verification passes (**exit 0**); fix failures and re-run.
 - The exceptions are creating worktrees (fine without confirmation). The coding agent must not silently commit. After developer approves implementation at the ship cut-point, `coding-session` commits (with explicit consent), runs **Before deploy** via inline **`deploy-walk`** when applicable, then **auto-spawns** the `pre-pr-review` reviewer lane (no separate pre-PR spawn modal).
 
 **Sedea git gate (same message):** This section is a **workflow** pause — it does **not** replace [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc). Agents must satisfy **both** layers in § *Ship git consent (workflow + Sedea gate)* below.
@@ -148,7 +164,7 @@ Two **independent** layers apply on **implementation** lanes (`coding-session` a
 | Commit at cut-point (no push yet) | *More changes* · *Defer ship* · More details for option _ | *Commit only* · *No git actions* · More details for option _ |
 | Push before pre-PR **`go`** | — | **Forbidden** in modals unless developer named **executive override** → **`executive-override-push`** on cut-point only |
 
-Planning-tree picks use [`.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc`](30_planning-target-resolution.mdc) § *Sedea input channel* — not this table.
+Planning-tree picks use [`.sedea/centers/software-development/rules/30_planning-target-resolution.mdc`](30_planning-target-resolution.mdc) § *Sedea input channel* — not this table.
 
 ### AskQuestion vs git commit/push (same message)
 
@@ -163,7 +179,7 @@ If **AskQuestion** approved a workflow step in a **prior** turn, wait for a **ne
 
 ### Mission-owned git when `plan and deliver` is active
 
-When Mission Control dispatches **`plan and deliver`** on **research-and-development**, commit/push cut points in **this rule** and in **`coding-session`**, **`pre-pr-review`**, and **`create-pr`** count as **mission-owned git** per [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Mission-owned git*.
+When Mission Control dispatches **`plan and deliver`** on **software-development**, commit/push cut points in **this rule** and in **`coding-session`**, **`pre-pr-review`**, and **`create-pr`** count as **mission-owned git** per [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Mission-owned git*.
 
 | Situation | [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Hosting-repo file edits* |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------|
@@ -225,7 +241,9 @@ This rule covers **chat output**, not just tool calls. After `git push`, do **no
 
 ## Worktree setup in plans
 
-Every multi-PR plan must end with a **Worktree setup** section containing copy-pasteable commands. Use the repo's directory name as a prefix for sibling worktree directories.
+Every multi-PR plan must end with a **Worktree setup** section containing copy-pasteable commands. Resolve **`WORKTREE_ROOT`** per [`.sedea/centers/sedea/rules/7_stacked-pr-worktree-naming.mdc`](.sedea/centers/sedea/rules/7_stacked-pr-worktree-naming.mdc) § *Worktree directory path (hosting repo)* — **do not substitute** paths directly under `dirname(HOSTING_ROOT)/` outside `{repo-basename}-worktrees/`.
+
+**Path formula is normative in rule 7 § *Worktree directory path (hosting repo)* — do not substitute.**
 
 **Normative path (Mission Control and `coding-session`):** center **`worktree-setup.sh`** from **`HOSTING_ROOT`**, then MCP attach when the setup JSON hint reports **`nextAction: attach-required`**. **Forbidden on the default path:** inline **`git worktree add`**, **`sedea_add_worktree_folder`** before setup exits **0**, and default-path inline **`worktree-bootstrap`**. See [`coding-session/SKILL.md`](../missions/plan-and-deliver/skills/coding-session/SKILL.md) § *Generic flow (single repo)* and § *Center worktree scripts (binding)*.
 
@@ -233,8 +251,12 @@ Canonical form for creating a worktree with a new worktree name:
 
 ```bash
 HOSTING_ROOT="<absolute-hosting-root>"
-WORKTREE_ROOT="<absolute-sibling-path>"   # repo basename prefix per rule 7
+REPO_BASENAME="$(basename "$HOSTING_ROOT")"
+WORKTREES_DIR="$(dirname "$HOSTING_ROOT")/${REPO_BASENAME}-worktrees"
 WORKTREE_NAME="<worktree-name>"           # rule 7 / this rule § *Worktree naming*
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
+mkdir -p "$WORKTREES_DIR"
 BASE_REF="origin/main"
 
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
@@ -278,9 +300,13 @@ Use **`origin/main`** as **`--base-ref`**, **not** local **`main`** — local **
 
 ## Center submodule pin promotion (hosting repo)
 
-When changes under a **non-built-in** center submodule (for example **`.sedea/centers/research-and-development/`**) merge to that center's **`defaultBranch`**, agents **must** run [`.sedea/centers/sedea/skills/promote-center-submodule-pin/SKILL.md`](.sedea/centers/sedea/skills/promote-center-submodule-pin/SKILL.md) **inline** on the hosting-repo lane so **`origin/main`** records the new gitlink. Entry routing: [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Pin promotion routing* — **direct** invoke, or **cleanup-hint** only when post-merge **`worktree-cleanup.sh`** reports drift (`nextAction: promote-pin-required` with **`centerPinDriftPaths`**; host background when **`autoPromoteSubmodulePins: true`**). Local pointer drift on the primary clone is **not** enough for worktree bootstrap — see § *Dirty hosting repo before center setup* and [`.sedea/centers/research-and-development/docs/development-process.md`](../docs/development-process.md) § *Center submodule git (two repositories)*.
+When changes under a **non-built-in** center submodule (for example **`.sedea/centers/software-development/`**) merge to that center's **`defaultBranch`**, agents **must** run [`.sedea/centers/sedea/skills/promote-submodule-pin/SKILL.md`](.sedea/centers/sedea/skills/promote-submodule-pin/SKILL.md) **inline** on the hosting-repo lane so **`origin/main`** records the new gitlink. Entry routing: [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Pin promotion routing* — **direct** invoke, or **cleanup-hint** only when post-merge **`worktree-cleanup.sh`** reports drift (`nextAction: promote-pin-required` with **`centerPinDriftPaths`**; host background when **`autoPromoteSubmodulePins: true`**). Local pointer drift on the primary clone is **not** enough for worktree bootstrap — see § *Dirty hosting repo before center setup* and [`.sedea/centers/software-development/docs/development-process.md`](../docs/development-process.md) § *Center submodule git (two repositories)*.
 
 Pin the center **`defaultBranch`** tip only. Git is **skill-owned** per [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Submodule pin promotion (skill-owned)*. Canonical semantics: [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Git repo semantics*.
+
+**Mandatory before ship row close (binding):** When the ship chain touched submodule gitlinks, **`prShipComplete: true`** is **forbidden** until hosting **`origin/main`** records merged tips and **`HOSTING_ROOT`** is refreshed. Pin promotion is **not** optional developer follow-up — see **`coding-session/SKILL.md`** § *Hosting-pin-complete gate (before prShipComplete)*. **Forbidden recap language:** *"if you want"*, *"optional follow-up"*, *"when you're ready"*, *"remains follow-up"*.
+
+**Calibration:** `incident_hosting_pin_promotion_treated_optional_2026-08-03.agent-incident-report.md`.
 
 **Launch from worktree (after bootstrap success — when hosting repo documents dev launcher):**
 
@@ -307,7 +333,7 @@ How to run the full cadence:
 
 ### `plan-state.mjs`
 
-Run all **`plan-state.mjs`** invocations per § *Hosting repo cwd for scripts (canonical)*. On Mission Control lanes, prefer explicit plan paths from spawn **`inputs`** or **`--file`** / **`--slug`** flags — see [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](31_dispatch-scope.mdc) § *Plans and docs paths*.
+Run all **`plan-state.mjs`** invocations per § *Hosting repo cwd for scripts (canonical)*. On Mission Control lanes, prefer explicit plan paths from spawn **`inputs`** or **`--file`** / **`--slug`** flags — see [`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`](31_dispatch-scope.mdc) § *Plans and docs paths*.
 
 ### User input
 
@@ -322,7 +348,7 @@ Apply § *Hosting repo cwd for scripts (canonical)* for every script invocation 
 
 1. **Commit** (step 1). **Skip this step if `git status --short` is empty** — typical when the worktree is already committed after **`pre-pr-review`** **go**. Do not amend the previous commit and do not pass `--allow-empty`; just proceed to step 2.
 2. Push to remote.
-3. **PR comment reconciliation (`pr-review` → this cadence).** This step is **only** [`pr-review`](../missions/plan-and-deliver/skills/pr-review/SKILL.md) **Step 5 — GitHub only** (not Steps 1–4). When this coding session already ran that skill’s Steps 1–4 (per-comment dispositions in the Step 4 report) and **GitHub** reply / resolve / minimize / summary from Step 5 has **not** run yet, the **commit and push cadence is incomplete** until Step 5 runs — **same agent turn**, immediately after the push succeeds (so the summary can cite `git rev-parse --short HEAD` in the **worktree**). Execute from **`HOSTING_ROOT`**: `cd "$HOSTING_ROOT" && node .sedea/centers/sedea/scripts/pr-review.mjs` (two-step `PR_REVIEW_INPUT` per that skill). If thread IDs or PR identity are missing from context, re-run that skill’s **Step 1** script array for the same PR, then Step 5. If there was no `pr-review` triage in this chat, **skip step 3 entirely** — do not run the script.
+3. **PR comment reconciliation (`pr-review` → this cadence).** This step is **only** [`pr-review`](../missions/plan-and-deliver/skills/pr-review/SKILL.md) **Step 5 — GitHub only** (not Steps 1–4). When this coding session already ran that skill’s Steps 1–4 (per-comment dispositions in the Step 4 report) and **GitHub** reply / resolve / minimize / summary from Step 5 has **not** run yet, the **commit and push cadence is incomplete** until Step 5 runs — **same agent turn**, immediately after the push succeeds (so the summary can cite `git rev-parse --short HEAD` in the **worktree**). Execute from **`HOSTING_ROOT`**: `cd "$HOSTING_ROOT" && .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs` (two-step `PR_REVIEW_INPUT` per that skill). If thread IDs or PR identity are missing from context, re-run that skill’s **Step 1** script array for the same PR, then Step 5. If there was no `pr-review` triage in this chat, **skip step 3 entirely** — do not run the script.
 
    **Anti-patterns (agent failure):**
 
@@ -334,14 +360,14 @@ Apply § *Hosting repo cwd for scripts (canonical)* for every script invocation 
 
    **Forbidden:** ending the assistant turn at push when Step 4 ran in-session; opening post-create-pr or pre-merge modals before **`outputs.githubReconciliationStatus: complete`** when Step 5 was required.
 
-4. **Link the PR to its plan sidecar.** After push (and after step 3 when applicable), attempt to upsert the PR number into the Plan Board sidecar so `plan-reconcile` can later archive the plan when all linked PRs merge. Run with **`cd "$HOSTING_ROOT"`** (`WORKTREE_ROOT` = hosting repo worktree where commit/push ran):
+4. **Link the PR to its plan sidecar.** After push (and after step 3 when applicable), attempt to upsert the PR number into the plan sidecar so `plan-reconcile` can later archive the plan when all linked PRs merge. Run with **`cd "$HOSTING_ROOT"`** (`WORKTREE_ROOT` = hosting repo worktree where commit/push ran):
 
    ```bash
    WORKTREE_ROOT="$(pwd)"   # hosting repo worktree (before cd to HOSTING_ROOT)
    cd "$HOSTING_ROOT"
    
    # Which plan owns this worktree? (exit 2 = none; skip silently)
-   node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+   .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   resolve --cwd "$WORKTREE_ROOT"
    # → prints "<slug>\t<planPath>" on exit 0.
 
@@ -351,7 +377,7 @@ Apply § *Hosting repo cwd for scripts (canonical)* for every script invocation 
    # → prints a number on stdout, or nothing (first push, a PR-creating agent not yet invoked).
 
    # If both resolved: upsert into sidecar prs[] (idempotent).
-   node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+   .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   upsert-pr \
      --slug <slug-from-resolve> \
      --repo "$(basename "$HOSTING_ROOT")" \
@@ -392,20 +418,29 @@ Example A — **hosting repo** (root contains `.sedea/centers/sedea/`; stacked P
 From the hosting repo root (directory containing `.sedea/`):
 
 HOSTING_ROOT="$(pwd)"
+REPO_BASENAME="$(basename "$HOSTING_ROOT")"
+WORKTREES_DIR="$(dirname "$HOSTING_ROOT")/${REPO_BASENAME}-worktrees"
 BASE_REF="origin/main"
+mkdir -p "$WORKTREES_DIR"
 
 # Independent — start immediately (stack index + slug; default prefix feat)
+WORKTREE_NAME="feat/01-token-auth"
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
   --hosting-root "$HOSTING_ROOT" \
-  --worktree-path "$(cd .. && pwd)/app-feat-01-token-auth" \
-  --worktree-name "feat/01-token-auth" \
+  --worktree-path "$WORKTREE_ROOT" \
+  --worktree-name "$WORKTREE_NAME" \
   --base-ref "$BASE_REF"
 # Mission Control: sedea_add_worktree_folder — absolute path when attach-required
 
+WORKTREE_NAME="improve/02-logger"
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
   --hosting-root "$HOSTING_ROOT" \
-  --worktree-path "$(cd .. && pwd)/app-improve-02-logger" \
-  --worktree-name "improve/02-logger" \
+  --worktree-path "$WORKTREE_ROOT" \
+  --worktree-name "$WORKTREE_NAME" \
   --base-ref "$BASE_REF"
 
 # Depends on PR 1 — after feat/01-token-auth merges
@@ -422,30 +457,43 @@ Example B — **hosting repo** (e.g. `user-auth`; no two-digit stack index unles
 ## Worktree setup
 
 HOSTING_ROOT="$(pwd)"
+REPO_BASENAME="$(basename "$HOSTING_ROOT")"
+WORKTREES_DIR="$(dirname "$HOSTING_ROOT")/${REPO_BASENAME}-worktrees"
 BASE_REF="origin/main"
+mkdir -p "$WORKTREES_DIR"
 
+WORKTREE_NAME="improve/logger"
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
   --hosting-root "$HOSTING_ROOT" \
-  --worktree-path "$(cd .. && pwd)/user-auth-improve-logger" \
-  --worktree-name "improve/logger" \
+  --worktree-path "$WORKTREE_ROOT" \
+  --worktree-name "$WORKTREE_NAME" \
   --base-ref "$BASE_REF"
 # sedea_add_worktree_folder — absolute path when attach-required
 
+WORKTREE_NAME="feat/token-auth"
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
   --hosting-root "$HOSTING_ROOT" \
-  --worktree-path "$(cd .. && pwd)/user-auth-feat-token-auth" \
-  --worktree-name "feat/token-auth" \
+  --worktree-path "$WORKTREE_ROOT" \
+  --worktree-name "$WORKTREE_NAME" \
   --base-ref "$BASE_REF"
 ```
 
 ## New worktree from `origin/main`
 
-Do **not** use **`git checkout -b`** on the primary hosting clone for implementation. Create a sibling worktree from **`HOSTING_ROOT`** via center setup:
+Do **not** use **`git checkout -b`** on the primary hosting clone for implementation. Create a worktree from **`HOSTING_ROOT`** via center setup (Rule 7 path under `{repo-basename}-worktrees/` — not a direct sibling of **`HOSTING_ROOT`**):
 
 ```bash
 HOSTING_ROOT="<absolute-hosting-root>"
-WORKTREE_ROOT="<absolute-path>"
+REPO_BASENAME="$(basename "$HOSTING_ROOT")"
+WORKTREES_DIR="$(dirname "$HOSTING_ROOT")/${REPO_BASENAME}-worktrees"
 WORKTREE_NAME="<worktree-name>"
+WORKTREE_DIR="${REPO_BASENAME}-$(echo "$WORKTREE_NAME" | tr '/' '-')"
+WORKTREE_ROOT="${WORKTREES_DIR}/${WORKTREE_DIR}"
+mkdir -p "$WORKTREES_DIR"
 
 "$HOSTING_ROOT/.sedea/centers/sedea/scripts/worktree-setup.sh" \
   --hosting-root "$HOSTING_ROOT" \
@@ -459,7 +507,7 @@ If a PR depends on an unmerged predecessor, **wait** for that predecessor to mer
 
 ## Keep PRs small and focused
 
-**Normative definition:** [`.sedea/centers/research-and-development/docs/development-process.md`](../docs/development-process.md) § *PR sizing — test cases and kinds of changes* (center sync contract). This section is the ship-lane summary; **`pr-breakdown`** step 5a applies the full contract during breakdown.
+**Normative definition:** [`.sedea/centers/software-development/docs/development-process.md`](../docs/development-process.md) § *PR sizing — test cases and kinds of changes* (center sync contract). This section is the ship-lane summary; **`pr-breakdown`** step 5a applies the full contract during breakdown.
 
 Minimize **two dimensions** independently:
 
@@ -487,24 +535,24 @@ When estimating PR size for breakdown decisions, count **kinds** first, then enu
 
 Break work down recursively until each piece is a **PR leaf**: one reviewable **concern**, one clear merge base (`origin/main` unless stacking is explicitly requested), not "one line" by default. Prefer **smallest meaningful** slices: each leaf should have a clear behavioral or structural outcome (what changed, how to see it, what tests cover) so reviews are substantive, not noise.
 
-- **Plan tree vs. git worktree** — The **plan** is a tree of intent: **master-planner** roots and nested `.plan.md` files (e.g. `parent:` links), with YAML **todos** in each file for **agents** (the Plan Board sidebar lists **plan files only**, not todo rows). **Git worktrees** are execution: at most one active PR per worktree ([One PR per worktree](#one-pr-per-worktree-many-worktrees-in-parallel)). **Each parallel PR** should map to **one leaf plan file** (and honest todos inside that file for the agent) so status stays honest.
+- **Plan tree vs. git worktree** — The **plan** is a tree of intent: **master-planner** roots and nested `.plan.md` files (e.g. `parent:` links), with YAML **todos** in each file for **agents** (Mission Control **Relevant Links** and the operations plan tree surface **plan files only**, not todo rows). **Git worktrees** are execution: at most one active PR per worktree ([One PR per worktree](#one-pr-per-worktree-many-worktrees-in-parallel)). **Each parallel PR** should map to **one leaf plan file** (and honest todos inside that file for the agent) so status stays honest.
 - **Child plans** — If one `.plan.md` gets too deep or cross-repo, add a **linked child plan**. The parent keeps a short **Plan map** (bullets or Mermaid) listing child slugs and roles.
 - **Contract drift** — If a leaf PR invalidates the breakdown, **update the parent plan** (diagram + todos) before spawning more worktrees so the tree stays the source of truth.
 - **Splitting an existing pile** — When splitting after the fact: get explicit approval before worktree edits, commit, or push; save a recoverable snapshot (`git stash create` + `git update-ref refs/backup/pre-split-<timestamp> …`); stage named paths or hunks only (no `git add .` / `git add -A`); use Mermaid when multiple slices. After push, complete **`coding-session`** ship chain through inline **`create-pr`** — never open a PR from other lanes (see **PR creation — inline `create-pr` on `coding-session`** above).
 
 ### Planning and validation (diagrams)
 
-For **multi-step or multi-PR** plans, include **at least one Mermaid diagram** (dependency order, data/control flow, or PR slice boundaries). A single trivial PR in one obvious place may omit a diagram. Sequence-heavy work can add a **numbered list** or **PR ↔ module** table alongside Mermaid; prefer Mermaid for **structure** because it renders in GitHub and in-editor.
+For **multi-step or multi-PR** plans, include **at least one Mermaid diagram** (dependency order, data/control flow, or PR slice boundaries). A single trivial PR in one obvious place may omit a diagram. Sequence-heavy work can add a **numbered list** or **PR ↔ module** table alongside Mermaid; prefer Mermaid for **structure** because it renders in GitHub and in-editor. Safe-generation contract: [`.sedea/centers/sedea/docs/mermaid-authoring.md`](.sedea/centers/sedea/docs/mermaid-authoring.md) — opaque ids, sequence `Note` single-line (no `<br/>`, no bare `;`), sequence message labels without bare `;`, flowchart-only `<br/>` in quoted labels.
 
 After each decomposition step, make validation easy for the human: **(a)** diagram, **(b)** ordered leaves marked **independent** vs **depends on …** (see [Plan for independence](#plan-for-independence)), **(c)** explicit **out of scope**. Prefer validation before hosting repo worktrees spin up.
 
-### Situation awareness and Plan Board
+### Situation awareness and operations plans
 
 Do not rely on chat alone for where work stands.
 
-- **Filesystem** — Intent lives in `.sedea/operations/**/plans/*.plan.md`: body, overview, frontmatter **todos**. Runtime state for the **Plan Board** extension lives in optional sidecars `.sedea/operations/**/plans/<slug>.state.yaml` (e.g. `worktrees`, `prs`, `session.focusPath`). Plan Board hierarchy and status come from that union — do not assume a fixed roadmap filename; when the workspace ships a roadmap or extension plan under `.sedea/operations/`, resolve it from Plan Board UI, user message, or `plan-state.mjs list-candidates` rather than a hard-coded slug.
+- **Filesystem** — Intent lives in `.sedea/operations/**/plans/*.plan.md`: body, overview, frontmatter **todos**. Runtime state for the **operations plan sidecar union** lives in optional sidecars `.sedea/operations/**/plans/<slug>.state.yaml` (e.g. `worktrees`, `prs`, `session.focusPath`). Plan hierarchy and lifecycle status come from that union — do not assume a fixed roadmap filename; when the workspace ships a roadmap or extension plan under `.sedea/operations/`, resolve it from the user message, Mission Control **Relevant Links**, or `plan-state.mjs list-candidates` (from **`HOSTING_ROOT`**) rather than a hard-coded slug.
 - **Agent habits** — Keep todo `status` accurate (`not_started` / `started` / `completed` / `canceled`). Track **postponed** work with a **Postponed / Deferred** subsection or explicit todos so "done" plans do not hide scope. Link related work: a **Related plans** section (slug + one line) in the parent body is enough unless you maintain optional `parent:` / `children:` frontmatter.
-- **Dashboard** — Use the Plan Board sidebar to see the **plan-file hierarchy** (master-plans, plan nesting, **Unlinked**), **status** icons, **worktrees**, and (when wired) PRs; keep plans and sidecars consistent with what the board displays.
+- **Discovery** — Use Mission Control **Relevant Links**, lane handover paths, or `plan-state.mjs list-candidates` to see the **plan-file hierarchy** (master-plans, plan nesting, archive state), **lifecycle status**, **worktrees**, and linked PRs; keep plans and sidecars consistent with what those surfaces show. **Forbidden:** instructing developers to open a removed Hub **Plans** pane — that UI was removed; Hub today exposes **Dispatch** and **Centers** only.
 
 ### Parallelism vs. batching
 
@@ -529,6 +577,17 @@ Every description starter (including on the first push in this cadence) should c
 - **Not in this PR** — deferrals, follow-ups, or parent-epic scope left out on purpose.
 - **Plan lineage (when applicable)** — one line with plan slug or path (e.g. `.sedea/operations/**/plans/<slug>.plan.md`) and, if useful, "see Mermaid in plan" so intent is not trapped in chat.
 - **Verification pointer** — how to confirm behavior (which tests or observable behavior); still no separate "test plan" essay.
+
+## Hosting-repo PR base branch (binding)
+
+When **`create-pr`** opens a PR on the **hosting repo** (or separate product repo worktree):
+
+1. Resolve **`<prBaseBranch>`** from inline **`baseRef`** — strip remote prefix (typically `origin/` → `main`).
+2. **`gh pr create`** **must** include **`--base "<prBaseBranch>" --head "<worktreeName>"`**. **Forbidden:** bare **`gh pr create`** without **`--base`**.
+3. **Pre-create self-check:** When **`gh api repos/<owner>/<repo> --jq .default_branch`** ≠ **`<prBaseBranch>`**, **`--base` is mandatory** (always safe to pass even when equal).
+4. Executable procedure: [`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md) § *`gh pr create` procedure (binding)*.
+
+**Center-repo PRs** (content in a **center git repository**): rule **20** does **not** apply — use [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Center-repo worktree procedure* and **`development-process.md`** § *Center-repo PR base (binding)*.
 
 ## Worktree naming
 
@@ -565,11 +624,57 @@ Do not conflate **pre-PR review** with **PR-surface review**:
 | **Pre-PR reviewer agent** | **Fresh** child lane — no coding-session transcript carry-over | After implementation approval, commit, and Before deploy **`deploy-walk`** (when applicable), before **`create-pr`** | [`pre-pr-review/SKILL.md`](../missions/plan-and-deliver/skills/pre-pr-review/SKILL.md) |
 | **Reviewer agent** | GitHub PR diff + description (Sedea or third-party) | After PR is open | [`pr-review/SKILL.md`](../missions/plan-and-deliver/skills/pr-review/SKILL.md) for comment triage; not a substitute for pre-PR |
 
-Full definitions: [`.sedea/centers/research-and-development/docs/development-process.md`](../docs/development-process.md) § *Agents and roles*.
+Full definitions: [`.sedea/centers/software-development/docs/development-process.md`](../docs/development-process.md) § *Agents and roles*.
+
+## PR approve-merge and merge inspect (binding)
+
+Software Development ship lanes (**`coding-session`**, inline **`pr-review`** when merge options apply, and **`plan-reconcile`** fallbacks) inherit the Phase **1** platform contract from [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *Approval-gated agent approve+merge*, § *PR approve-merge structured choice*, and § *Merge inspect procedure*. This rule does **not** duplicate those tables — it binds Software Development ship-lane behavior to rule **6**.
+
+### Modal scope (binding)
+
+Rule **6** § *PR approve-merge structured choice* **modal scope** applies to **every** structured-choice surface in the **current ship chain** that offers agent approve+merge while the PR is **open** (`prState: open`) — not only the first modal after **`create-pr`**. That includes **`coding-session`** post-create-pr, pre-merge authorization, and inline **`pr-review`** disposition gates when agent merge is in scope. Invoker skills own marker placement and option tables; rule **6** binds scope, ordering, and inspect.
+
+### Option ordering (binding)
+
+When agent merge is offered on any Software Development ship-chain modal for **that** open PR:
+
+| Contract | Requirement |
+|----------|-------------|
+| **Option id** | **`approve-merge-pr`** (canonical cross-center id) |
+| **Option label** | **Approve and Merge PR** (exact string — forbid *Merge and Approve*) |
+| **Ordering** | **`approve-merge-pr`** is **option index 1**. **`merged-pr-proceed`** (when present) is **option index 2** — never before **`approve-merge-pr`**. Review-first or delegate paths (**`start-pr-review`**, **`start-pr-review-delegate-merge`**, and similar) follow as option 3+ unless the invoker documents a narrower modal. |
+
+Detail and forbidden patterns: rule **6** § *PR approve-merge structured choice*.
+
+### Merge inspect procedure (binding)
+
+After the developer picks **`approve-merge-pr`** (or an equivalent same-turn merge-delegation pick for **that** PR), agents **always inspect before mutating GitHub** — never unconditional approve or merge.
+
+1. **Inspect** — from the worktree or repo root that owns the PR branch:
+   ```bash
+   gh pr view <number> --json state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,url
+   ```
+2. **Not mergeable** — when **`mergeable`** is not **`MERGEABLE`**, or rollup signals blocked CI, conflicts, or pending required checks: **stop**; do **not** run **`gh pr review --approve`** or **`gh pr merge`**. Offer retry / check CI / defer via structured choice on the invoker skill.
+3. **Mergeable — approval not required** — run **`gh pr merge`** **only** — do **not** run **`gh pr review --approve`** first.
+4. **Mergeable — approval required** — run **`gh pr review --approve`**, then **`gh pr merge`**, in the **same act turn** after the structured-choice pick.
+
+Full algorithm and minimum signals: rule **6** § *Merge inspect procedure*.
+
+**Checkpoint auto-advance:** when Checkpoint trust auto-advances past a merge modal (implicit **`delegate-merge-confirm`** or equivalent), the **inspect procedure still runs** before any **`gh`** mutate — auto-advance waives the modal, not inspect.
+
+### Post-create modal scope note
+
+On **`coding-session`**, the first structured-choice surface after inline **`create-pr`** completes is a **post-create-pr** gate while the PR remains **open**. That gate is **in scope** for rule **6** modal scope and **`approve-merge-pr`** first ordering above — same as pre-merge and disposition gates later in the chain. PR 2 (**`coding-session`** gate table edits) implements the option rows; this rule **20** cross-ref must exist before those edits cite stable contract text.
+
+### Default path without approve+merge pick
+
+Prefer user merge on GitHub (**`merged-pr-proceed`** / status detect). Agents may offer approval-gated approve+merge only with explicit same-turn structured-choice pick per rule **6** — **forbidden** to infer merge consent from silence, prior turns, or commit/push/create-PR consent.
+
+**Carve-out:** [`.sedea/centers/sedea/skills/promote-submodule-pin/SKILL.md`](.sedea/centers/sedea/skills/promote-submodule-pin/SKILL.md) runs skill-owned **`gh pr merge`** with zero user approval options — distinct from approval-gated mission ship merge; do not copy its auto-merge into Software Development ship lanes.
 
 ## Checkpoint step continuation (binding)
 
-This file is the **R&D ship-lane worktree / commit-push / PR-creation contract**, not a mission protocol with executable ship steps. Under **`trustLevel: checkpoint`**, turn-end modal UX for worktree-open, ship cut-points, pre-PR / create-PR / post-create-pr gates, and post-merge cleanup lives in invoker skills (`coding-session`, `create-pr`, `pre-pr-review`, `plan-reconcile`, `promote-center-submodule-pin`) and consent gates in sedea rules **6** / **2** / **1** / **7**. **Do not** add literal `USER_CHECKPOINT` markers here for happy-path HOSTING_ROOT resolution, worktree setup hints, ownership-clear remove paths, or policy redirects to **`coding-session`** — that would fight skill auto-advance.
+This file is the **Software Development ship-lane worktree / commit-push / PR-creation contract**, not a mission protocol with executable ship steps. Under **`trustLevel: checkpoint`**, turn-end modal UX for worktree-open, ship cut-points, pre-PR / create-PR / post-create-pr gates, and post-merge cleanup lives in invoker skills (`coding-session`, `create-pr`, `pre-pr-review`, `plan-reconcile`, `promote-submodule-pin`) and consent gates in sedea rules **6** / **2** / **1** / **7**. **Do not** add literal `USER_CHECKPOINT` markers here for happy-path HOSTING_ROOT resolution, worktree setup hints, ownership-clear remove paths, or policy redirects to **`coding-session`** — that would fight skill auto-advance.
 
 | Surface | Designation | Owner |
 |---------|-------------|--------|
@@ -579,9 +684,10 @@ This file is the **R&D ship-lane worktree / commit-push / PR-creation contract**
 | Worktree remove / cleanup when Path A or Path B ownership is clear | **auto-advance** | This § *Worktree removal ownership*; invoker post-merge cleanup |
 | Worktree remove / cleanup when ownership is unsure | **checkpoint** | Invoker cleanup / ship skill — strengthened stop prose above; no markers in this file |
 | Review-before-commit / ship cut-point / pre-PR / create-PR gates | **baseline-governs** (reference) | **`coding-session/SKILL.md`** Checkpoint turn UX + sedea rule **6** — not duplicated here |
+| PR approve-merge modal scope / **`approve-merge-pr`** ordering / merge inspect | **baseline-governs** (reference) | This rule § *PR approve-merge and merge inspect*; rule **6** owns contract |
 | Wrong-lane `gh pr create` / create-PR URL handoff | **auto-advance** (policy stop) | This § *PR creation* — redirect to **`coding-session`** ship chain; no prose create-PR substitute |
 | Commit and push cadence after same-message / gate consent | **auto-advance** | This § *Commit and push cadence*; sedea rule **6** + skill gates authorize git |
-| Center submodule pin promotion after center merge | **auto-advance** | This § *Center submodule pin promotion*; inline **`promote-center-submodule-pin`** |
+| Center submodule pin promotion after center merge | **auto-advance** | This § *Center submodule pin promotion*; inline **`promote-submodule-pin`** |
 | Turn completion after ship-policy guidance in chat | **baseline-governs** (reference) | Rules **1**–**2**; pointer in Related below |
 
 **Forbidden in this file:** prescribing prose *tell me when* / *come back when* / *I'll wait* / *over to you* / *ask how to proceed* as the primary wait surface for ownership-unsure stops, hosting-root picks, or ship-gate stands-in; duplicating **`coding-session`** / rule-6 AskQuestion option tables; `USER_CHECKPOINT` tokens for happy-path script cwd, worktree setup, or PR-creation policy redirects.
@@ -594,5 +700,6 @@ This file is the **R&D ship-lane worktree / commit-push / PR-creation contract**
 - Commit/push gate: [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc)
 - Stacked worktree naming: [`.sedea/centers/sedea/rules/7_stacked-pr-worktree-naming.mdc`](.sedea/centers/sedea/rules/7_stacked-pr-worktree-naming.mdc)
 - Ship executor: [`coding-session/SKILL.md`](../missions/plan-and-deliver/skills/coding-session/SKILL.md)
+- PR approve-merge / merge inspect: [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *PR approve-merge structured choice* / § *Merge inspect procedure*; this rule § *PR approve-merge and merge inspect*
 - Turn completion / no idle handoff: [`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`](.sedea/centers/sedea/rules/2_ask-question-instructions.mdc); [`.sedea/centers/sedea/rules/1_agent-code-of-conduct.mdc`](.sedea/centers/sedea/rules/1_agent-code-of-conduct.mdc)
 - Plan naming cross-ref: [10_plan-naming-convention.mdc](10_plan-naming-convention.mdc)

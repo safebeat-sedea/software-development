@@ -40,41 +40,39 @@ inputs:
     required: true
 laneRules:
   - ".sedea/centers/sedea/rules/2_ask-question-instructions.mdc"
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/author-prd/SKILL.md"
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
+  - ".sedea/centers/software-development/missions/plan-and-deliver/skills/author-prd/SKILL.md"
+  - ".sedea/centers/software-development/missions/plan-and-deliver/plan.mdc"
 warmUpRules:
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
+  - ".sedea/centers/software-development/missions/plan-and-deliver/skills/README.md"
 ---
 
 # Skill: author-prd
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Definitive `laneRules`* (**`author-prd` child** row). Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table; spawners may omit run-request **`laneRules`** when identical (README spawn preflight row 11). **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Definitive `laneRules`* (**`author-prd` child** row). Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table; spawners may omit run-request **`laneRules`** when identical (README spawn preflight row 11). **384 KiB cap:** frontmatter omits **`plan.mdc`** (loaded via **`laneRules`**) and **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/software-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === software-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader §§1–3 PRD intake |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | PRD templates, planning readiness |
+| `.sedea/centers/software-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `plan.mdc` (in **`laneRules`**), `development-process.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
 | Path | Purpose |
 |------|---------|
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice, PRD approval |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/author-prd/SKILL.md` | This skill procedure |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader §§1–3 (role minimum) |
+| `.sedea/centers/software-development/missions/plan-and-deliver/skills/author-prd/SKILL.md` | This skill procedure |
+| `.sedea/centers/software-development/missions/plan-and-deliver/plan.mdc` | Squad Leader §§1–3 (role minimum) |
 
 ## Agent messaging (MCP)
 
@@ -91,6 +89,11 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
 
 ## Checkpoint turn UX (skill-local)
+
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/software-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`author-prd`**; invoker mission **`plan and deliver`** documents Squad Leader gates — see **`plan-and-deliver/plan.mdc`** §3 spawn handover and **§3 resume (Author PRD agent)** for leader-lane ack / auto-chain.
 
@@ -125,7 +128,7 @@ USER_CHECKPOINT — provide missing Author PRD inputs on this lane.
 
 ## Purpose
 
-Gather evidence, calibrate section policy, and draft or update a Product or Feature Requirements Document that is complete and correct enough to feed the **research-and-development** center **`plan and deliver`** mission (`.sedea/centers/research-and-development/missions/plan-and-deliver/` — Master Plan via **`master-planner`**). The document structure is flexible: mandatory sections define planning readiness, important sections raise visible gaps, and optional sections appear only when the feature needs them.
+Gather evidence, calibrate section policy, and draft or update a Product or Feature Requirements Document that is complete and correct enough to feed the **software-development** center **`plan and deliver`** mission (`.sedea/centers/software-development/missions/plan-and-deliver/` — Master Plan via **`master-planner`**). The document structure is flexible: mandatory sections define planning readiness, important sections raise visible gaps, and optional sections appear only when the feature needs them.
 
 ## Inputs
 
@@ -134,14 +137,14 @@ Gather evidence, calibrate section policy, and draft or update a Product or Feat
 - `operation`: `create` or `manage`
 - `targetPath` when supplied
 - `sourceMaterials` (optional seed materials)
-- **Docs write root** — **`operationsDocsDirectory`** from lane identity / spawn **`inputs`**, or explicit `targetPath` for **`manage`** — per **`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`** § *Docs write root resolution*; do not construct `.sedea/operations/.../` path segments
+- **Docs write root** — **`operationsDocsDirectory`** from lane identity / spawn **`inputs`**, or explicit `targetPath` for **`manage`** — per **`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`** § *Docs write root resolution*; do not construct `.sedea/operations/.../` path segments
 - `operationsDocsDirectory` (required for **`create`** when `targetPath` is not supplied)
 - `sectionPolicy`
 - `existingPrdBody` for updates
 
 ## Procedure
 
-1. Validate the operation and resolve **docs write root** (binding — **`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`** § *Docs write root resolution*):
+1. Validate the operation and resolve **docs write root** (binding — **`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`** § *Docs write root resolution*):
 
    - **Next-step resolution:** Auto-advance to step **1b** when validation passes — no `USER_CHECKPOINT` on happy path. When **`operationsDocsDirectory`** or required **`create`** fields are missing, open [Missing inputs gate](#missing-inputs-gate-binding) or return `failure` / `partial` with `outputs.missingFields` when the skill cannot collect on this lane.
  - `create` drafts a new PRD.
@@ -205,6 +208,8 @@ Gather evidence, calibrate section policy, and draft or update a Product or Feat
    - **Next-step resolution:** Auto-advance to step **8** — no `USER_CHECKPOINT` on this step.
 
 8. Write the document when an output path is resolved, then re-read it and verify the required sections.
+
+   - **Relevant Links (post-write):** After a successful create or material edit, call MCP **`mission_control_update_relevant_documents`** with the absolute PRD path (`kind: prd`) on this lane — same turn preferred. **Skip** when the path is already registered this session with no content change. Does **not** replace terminal `prdPath` / `prdRef`. See **`../README.md`** § *Relevant Links — post-write registration*.
 
    - **Next-step resolution:** Auto-advance to step **9** after successful write — emit non-terminal **`mission_control_send_agent_result`** with `developerApprovedPrd: false` when **`plan.mdc`** §3 requires leader ack before step **10**; do **not** treat that ack as PRD approval.
 
@@ -377,6 +382,20 @@ The **`plan and deliver`** Squad Leader spawns this skill on a child lane (**`pl
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below; **forbidden** while **`continuationStatus: active`** |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| **`continuationStatus: active`** (approval pending; post-write ack) | **Forbidden** |
+| **`continuationStatus: terminal`** (**Approve PRD** or abandon) | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "author-prd-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Forbidden:** structured-choice options whose primary purpose is parent-switch — use **`mission_control_refocus_parent_lane`** instead.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Top-level `status`: `success`, `partial`, `failure`, `aborted`, or `abandoned`.
 
