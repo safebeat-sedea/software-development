@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const SD_CENTER_SLUG = 'software-development';
+export const SD_CENTER_SLUG = 'research-and-development';
 export const SD_CENTER_PREFIX = `.sedea/centers/${SD_CENTER_SLUG}/`;
 
 /**
