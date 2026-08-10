@@ -25,6 +25,7 @@ rules:
   - path: rules/31_dispatch-scope.mdc
   - path: rules/40_maintain-rules.mdc
   - path: rules/50_mission-control-display-metadata-discipline.mdc
+  - path: rules/60_github-issue-dispatch-closure.mdc
 
 missions:
   - slug: plan-and-deliver
@@ -36,6 +37,7 @@ missions:
       - missions/plan-and-deliver/skills/author-prd/SKILL.md
       - missions/plan-and-deliver/skills/brainstorm-research/SKILL.md
       - missions/plan-and-deliver/skills/ad-hoc-prd/SKILL.md
+      - missions/plan-and-deliver/skills/capture-release-note/SKILL.md
       - missions/plan-and-deliver/skills/coding-session/SKILL.md
       - missions/plan-and-deliver/skills/create-pr/SKILL.md
       - missions/plan-and-deliver/skills/delivery-phases/SKILL.md

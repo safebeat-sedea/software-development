@@ -62,6 +62,13 @@ inputs:
       `### Before deploy` while Status stays `drafted`; do not run After deploy or
       `deploy-walk deployed`. Omit for full post-merge walk (typical After-deploy inline).
     required: false
+  promoteSubmodulePinOutcomes:
+    type: array
+    description: >-
+      Per-center submodule merge gate results from coding-session
+      (`{ centerSlug, sourceOnMainVerified, promoteStatus }`) — passed through for
+      honest After deploy attestation; not a substitute for verify script SHA checks.
+    required: false
 ---
 
 # Deploy walk-through
@@ -111,6 +118,8 @@ When run **inline** on **`coding-session`** (pre-merge **Before deploy** or post
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`deploy-walk`**; other ship-chain skills document their own markers.
 
+**Parent yield gate:** Mid-ship StreamFinal without same-turn Act on the invoker **`coding-session`** lane is governed by **`coding-session/SKILL.md`** § [Yield gate (Checkpoint — binding)](../coding-session/SKILL.md#yield-gate-checkpoint--binding). This skill must **not** authorize recap-only “Act next turn” exits that leave the parent without a resume modal.
+
 **Real-dispatch test loop (binding):** After merge, run one full inline **`deploy-walk`** on a **`coding-session`** Checkpoint dispatch through [Manual step await gate](#manual-step-await-gate-binding) / [Step 4 — Step presentation contract](#step-4--step-presentation-contract) and collect a developer verdict before the parent phase advances **`create-pr`** PR 4 — per **Ship-chain skills UX** § *Single-concern strategy*.
 
 Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md).
@@ -152,6 +161,7 @@ Mission Control gate-surface detection for inline **`deploy-walk`** on Checkpoin
 | Agent mistake | Correct action |
 |---------------|----------------|
 | Treat deploy walk `done` as permission to archive the plan | Tell the developer to run **`plan-reconcile`** inline on **`coding-session`** when ready (phrase or stale-worktree / post-deploy choice) |
+| Paraphrase § 7 After deploy as *defer plan-reconcile to dispatch close* or recommend skipping a step until dispatch resolution | **Forbidden** — reconcile runs inline on active **`coding-session`** while dispatch is open; revise plan text or modal copy |
 | Emit **`mission_control_spawn_agent`** for **`plan-reconcile`** from this lane | **Forbidden** — hand off in prose only |
 
 Canonical: **`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`** § *deploy-walk vs plan-reconcile (not chained)*.
@@ -381,6 +391,7 @@ Run **without** an **AskQuestion** approval gate **before each agent-executable 
 |----------|--------|
 | Unit / integration tests (`npm test`, `node --test`, `go test`, `cargo test`, …) | Run in the worktree; exit 0 = pass |
 | Center governance scripts (`node .sedea/centers/sedea/scripts/*.mjs`, `node …/plan-and-deliver/scripts/*.mjs`) | From **`HOSTING_ROOT`** per rule **20** § *Hosting repo cwd* |
+| **`verify-submodule-ship-attestation.mjs`** | Submodule After deploy step 1 — strict SHA gitlink vs center **`defaultBranch`** tip; optional **`promoteSubmodulePinOutcomes`** cross-check |
 | Repo scripts (`./scripts/verify-*.sh`, `make test`, documented package scripts) | Read script first when non-obvious |
 | `curl` / `wget` / HTTP checks to **localhost**, staging URLs, or endpoints documented in the step when credentials/env are already available in the session | Do **not** invent secrets; if env vars are missing, treat as manual or **block** |
 | File / config assertions (`test -f`, grep, read expected artifact) | |
@@ -418,6 +429,29 @@ Run **without** an **AskQuestion** approval gate **before each agent-executable 
 | **GitHub CLI** | `gh pr view`, `gh api`, `gh run list` / `view` when `gh` auth works in the shell |
 | **Mission Control MCP** | `sedea_get_current_user`; `sedea_add_worktree_folder` / `sedea_remove_worktree_folder` when worktree lifecycle applies; `mission_control_update_lane_display` on **own** slot only |
 | **Parse / verify** | Read JSON, YAML, Markdown plan sections; compare output to expected shape; count matches; exit codes — **agent parses**, not developer |
+
+### Submodule ship attestation (After deploy — binding)
+
+When the anchored PR plan's **`### After deploy`** step text references **submodule source merged**, **`promote-submodule-pin`**, **honest attestation**, **`verify-submodule-ship-attestation`**, or **dual-repo ship gate** attestation, classify the step **agent-executable** and run this procedure **before** flipping the checkbox.
+
+**Preconditions:**
+
+1. **`HOSTING_ROOT`** resolves (inline context may omit **`worktreePath`** post-merge — attestation runs from hosting root, not session worktree).
+2. Inline context may include **`promoteSubmodulePinOutcomes`** from parent **`coding-session`** — use for cross-check only; **forbidden:** treating N/A, skipped, or failed promote outcomes as pass.
+
+**Procedure:**
+
+1. From **`HOSTING_ROOT`**, run:
+   ```bash
+   node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-submodule-ship-attestation.mjs \
+     --hosting-root "$HOSTING_ROOT"
+   ```
+   When **`promoteSubmodulePinOutcomes`** is non-empty, write a temp JSON array and pass **`--outcomes-json <path>`** (or embed in a wrapper object with key **`promoteSubmodulePinOutcomes`**).
+2. **On exit 0:** flip the step **`[x]`** with dated note citing script exit **0**, each in-scope **`centerSlug`**, matching **`gitlinkSha`** / **`remoteTip`**, and promote outcome status when provided.
+3. **On exit 1:** do **not** flip. Report failing **`centerSlug`** rows from stdout JSON; offer **`deploy-walk <N> block: …`** or assist debug. **Forbidden:** hand-waving promote N/A, *hosting gitlink already at feature SHA*, or *promote skipped for built-in sedea* as attestation pass.
+4. **Distinction (binding):** **Center source merged to `defaultBranch`** and **`promote-submodule-pin` success** are separate obligations — both must appear in evidence. Strict SHA: hosting gitlink must equal center **`defaultBranch`** tip, not merely a fetchable feature-branch commit.
+
+**Deferred §7 steps from prior PRs:** When step text explicitly defers attestation to this PR (for example PR 1–2 After deploy carryover), run this procedure as the fulfillment path — do not re-mark deferred steps on prior plans from this lane unless those plans are the active anchor.
 
 **Agent-executable verification examples (binding)** — when a step names `dispatch.yaml`, dispatch bundle JSON, plan sidecars, YAML/JSON fields, before/after mutations, or plan-body checkboxes/status, the agent uses tools (`Read`, `Grep`, `Glob`, `Shell`) before flipping `[ ]` → `[x]`. Done notes cite the tool result: path, command, exit code, or quoted field values. Developer chat confirmation alone is **not** evidence for agent-executable work.
 
@@ -692,7 +726,8 @@ Use a **blockquote** or plain lines for the presentation shell — **do not** pu
 2. Each sub-step is **one action + one checkpoint** (run command → check output; open page → confirm element; trigger flow → verify side effect).
 3. Expand plan shorthand into executable detail (URLs, curl bodies, CLI flags, UI paths, env vars as `TODO:` when unknown).
 4. **Forbidden:** manual presentation with only context blocks and **no** **Testing steps** list.
-5. When an agent-executable run **failed** and you hand back to the developer, include **Testing steps** for the retry path (same rules).
+5. **Forbidden:** inventing UI navigation paths that do not exist today — for example directing developers to a removed Hub **Plans** pane. Cite only verbatim plan §7 text, verified CLI commands (for example `plan-state.mjs list-candidates` from **`HOSTING_ROOT`**), or Hub surfaces that exist today (**Dispatch** and **Centers** only).
+6. When an agent-executable run **failed** and you hand back to the developer, include **Testing steps** for the retry path (same rules).
 
 **Example** (plan step: `Confirm staging health dashboard shows no alerts`):
 
@@ -752,8 +787,9 @@ old_string:
  content: >-
  Mark done only when every Before-deploy and After-deploy step is checked
  (`[x]`) and the deploy section `**Status:**` reads `done` (walk via `deploy-walk`,
- or edit manually). Independent of PR merge; run `plan-reconcile` protocol branch when you want
- reconcile/archive after merges.
+ or edit manually). Independent of PR merge; run inline `plan-reconcile` on the active
+ `coding-session` lane while the dispatch is open when you want reconcile/archive after merges
+ — not after dispatch resolution.
  status: pending
 
 new_string:
@@ -761,8 +797,9 @@ new_string:
  content: >-
  Mark done only when every Before-deploy and After-deploy step is checked
  (`[x]`) and the deploy section `**Status:**` reads `done` (walk via `deploy-walk`,
- or edit manually). Independent of PR merge; run `plan-reconcile` protocol branch when you want
- reconcile/archive after merges.
+ or edit manually). Independent of PR merge; run inline `plan-reconcile` on the active
+ `coding-session` lane while the dispatch is open when you want reconcile/archive after merges
+ — not after dispatch resolution.
  status: done
 ```
 
@@ -795,7 +832,7 @@ No blocking — the **developer** is in control.
 3. **User typo on step number.** If `deploy-walk present 12` is invoked but the section has only 5 items, reply: *"Section has only 5 numbered items; `deploy-walk present 12` is out of range. Did you mean a different step number? Or run `deploy-walk status` for the current shape."*
 4. **`deploy-walk <N> done` invoked without a prior `deploy-walk present <N>`.** The skill doesn't enforce ordering — `done` just flips the box. If the box was already `[x]`, surface: *"Step N was already `[x]` when this `done` arrived. No edit applied. Did you mean a different step number?"*
 5. **Status line drifted (e.g. `deployed` but Before still has `[ ]` boxes).** This isn't an error condition — the **developer** may have deployed despite skipping some Before-deploy checks deliberately, or the previous `deploy-walk deployed` invocation surfaced the unchecked-box flag and the **developer** accepted it. The skill respects the Status line as the source of truth.
-6. **Plan archived mid-walk.** If **`plan-state`** **`reconcile`** archives the plan between commands (rare; usually requires the PR to merge), the next command's Step-1 resolution must **re-resolve** the slug under **`.sedea/operations/`**. Archived plans keep the same **`plans/`** tree path with sidecar **`archived: true`** on **`<slug>.state.yaml`** (rule 8 — Plan Board does not read frontmatter `archived:`). Edits still apply via `StrReplace` on that path. Archival timing is **plan-reconcile** / **`plan-state`**'s concern, not this skill's.
+6. **Plan archived mid-walk.** If **`plan-state`** **`reconcile`** archives the plan between commands (rare; usually requires the PR to merge), the next command's Step-1 resolution must **re-resolve** the slug under **`.sedea/operations/`**. Archived plans keep the same **`plans/`** tree path with sidecar **`archived: true`** on **`<slug>.state.yaml`** (rule 8 — sidecar `archived:` is authoritative; frontmatter `archived:` is not read). Edits still apply via `StrReplace` on that path. Archival timing is **plan-reconcile** / **`plan-state`**'s concern, not this skill's.
 7. **User wants to revert a `[x]` to `[ ]`.** Not a built-in command. If they ask, do the inverse `StrReplace` manually (flip `[x]` → `[ ]` and trim the trailing `*(...)*` note). Surface this as an unusual case — usually the right move is a fresh `deploy-walk <N> done` with a new note explaining what changed.
 8. **Deploy walk on a non-PR plan (Master Plan, Phase plan, etc.).** Master Plans and Phase plans don't have `## N. Deploy test plan` sections — they have dual-title decomposition sections. If the user runs **deploy-walk** against one, stop with: *"Plan `{slug}` is a Master Plan, Phase plan, or Roadmap topic (pick which), which doesn't have a `## N. Deploy test plan` section. **deploy-walk** only walks PR plans (per-PR template § 7 / § 6). Did you mean a child PR plan?"*
 9. **Roll-back.** Out of scope for v1. If a deploy fails and the user wants to flip status back to `drafted`, they edit the Status line manually.
@@ -834,6 +871,7 @@ When run inline on **`coding-session`**, report these fields in prose via **`## 
 - `outputs.rowStatus` — `open` while steps remain; `closed` when `deployStatus` and `deployTodoStatus` are both `done`; `blocked` when a deploy step is blocked
 - `outputs.blockedReason` — when `rowStatus` is `blocked` (name the blocked step)
 - `outputs.returnToImplementation` — **`true`** when the developer chose **`return-to-implementation-new-worktree`** at a deploy gate; parent **`coding-session`** opens a new worktree (see [Return to implementation from deploy walk](#return-to-implementation-from-deploy-walk-inline-handback))
+- `outputs.requiresShipTail` — **`true`** when `upstreamSkill` is **`coding-session`**, scope is post-merge **After deploy** (not `before-deploy-only`), and **`deployStatus: done`** with **`deployTodoStatus: done`** — parent owns [Post–After deploy remainder inventory](../coding-session/SKILL.md#post-after-deploy-remainder-inventory); this skill does **not** emit **`prShipComplete`**
 
 ## Return to implementation from deploy walk (inline handback)
 
@@ -853,5 +891,7 @@ Stop when a **manual** step is presented and awaiting developer input, when the 
 ## Completion (inline)
 
 Report the fields from **## Inline result contract** in prose to the invoker on the **same lane**. Do **not** emit `mission_control_spawn_agent`, `mission_control_send_agent_result`, or `mission_control_propose_dispatch_resolution`. Do **not** add a **MCP result** (see **`.sedea/centers/sedea/rules/4_mission.mdc`** § *Inline completion* and **`.sedea/centers/sedea/skills/README.md`** § *Completion (inline)*).
+
+When `upstreamSkill` is **`coding-session`** and the walk completes post-merge After deploy with **`deployStatus: done`** and **`deployTodoStatus: done`**, set **`requiresShipTail: true`** in inline outputs and include one handback line: *Deploy checklist closed — coding-session owns plan-reconcile tail.*
 
 Normally invoked inline from **`coding-session`** (Before deploy, pre-merge, or After deploy post-merge). Deploy phrases on the active coding-session lane use the same procedure body.

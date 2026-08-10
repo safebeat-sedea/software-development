@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Plan & PR naming
 
-**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/research-and-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole R&D `alwaysApply: true` bootstrap. Read **this file** when you need plan/PR/worktree naming and forbidden-word policy — not on every dispatch warm-up.
+**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/research-and-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole Software Development `alwaysApply: true` bootstrap. Read **this file** when you need plan/PR/worktree naming and forbidden-word policy — not on every dispatch warm-up.
 
 Applies to **plan filenames and headings**, **worktree names** (`-b` on `git worktree add`), **PR titles and descriptions**, **chat titles**, and **commit messages** across all repos.
 
@@ -83,7 +83,7 @@ Stop and ask: *what is actually better after this change?* That answer is the ti
 
 ## Checkpoint step continuation (binding)
 
-This file is the **plan / PR / worktree naming and forbidden-word contract**, not a mission protocol with executable ship steps. Under **`trustLevel: checkpoint`**, turn-end modal UX for worktree-open, ship cut-points, and post-merge cleanup lives in invoker skills (`coding-session`, `create-pr`, `promote-center-submodule-pin`) and consent gates in rules **6** / **2** / **1** / sedea rule **7**. **Do not** add literal `USER_CHECKPOINT` markers here for happy-path benefit naming, prefix selection, or stacked-vs-separate pattern resolution when the plan or developer already named the outcome — that would fight skill auto-advance.
+This file is the **plan / PR / worktree naming and forbidden-word contract**, not a mission protocol with executable ship steps. Under **`trustLevel: checkpoint`**, turn-end modal UX for worktree-open, ship cut-points, and post-merge cleanup lives in invoker skills (`coding-session`, `create-pr`, `promote-submodule-pin`) and consent gates in rules **6** / **2** / **1** / sedea rule **7**. **Do not** add literal `USER_CHECKPOINT` markers here for happy-path benefit naming, prefix selection, or stacked-vs-separate pattern resolution when the plan or developer already named the outcome — that would fight skill auto-advance.
 
 | Surface | Designation | Owner |
 |---------|-------------|--------|

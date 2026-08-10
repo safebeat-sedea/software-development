@@ -29,7 +29,7 @@ inputs:
     required: true
   centerSlug:
     type: string
-    description: Center slug; quick-fix uses research-and-development.
+    description: Center slug; quick-fix uses software-development.
     required: true
   complexityConfirmed:
     type: boolean
@@ -43,7 +43,6 @@ laneRules:
 warmUpRules:
   - ".sedea/centers/research-and-development/missions/quick-fix/plan.mdc"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/10_plan-naming-convention.mdc"
 ---
 
@@ -55,15 +54,15 @@ warmUpRules:
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md). Spawned from **`quick-fix`** §3 only. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table.
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md). Spawned from **`quick-fix`** §3 only. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table. **384 KiB cap:** frontmatter omits **`development-process.md`** — explicit **`Read`** at named protocol steps.
 
 **Invoker `warmUpRules` override (binding):** On **`mission_control_spawn_agent`**, merge skill frontmatter **`warmUpRules`** and ensure **`quick-fix/plan.mdc`** is present — **not** `plan-and-deliver/plan.mdc`.
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
@@ -71,8 +70,9 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 |------|---------|
 | `.sedea/centers/research-and-development/missions/quick-fix/plan.mdc` | Mission protocol §§3–5 |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, inline **`new-plan`** / **`pr-plan`** |
-| `.sedea/centers/research-and-development/docs/development-process.md` | Cadence |
 | `.sedea/centers/research-and-development/rules/10_plan-naming-convention.mdc` | Plan naming |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `development-process.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -110,6 +110,11 @@ Run **`../plan-and-deliver/skills/README.md`** § *Universal spawn preflight* be
 
 ## Checkpoint turn UX (skill-local)
 
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
+
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`quick-fix-plan`**; invoker mission **`quick-fix`** documents Squad Leader gates — see **`quick-fix/plan.mdc`** §§1–3 and §8 for intake, child-failure, and dispatch-resolution markers.
 
 **Real-dispatch test loop (binding):** After merge, run one full **`quick-fix-plan`** spawn on a Checkpoint dispatch through inline **`pr-plan`** §5c and collect a developer verdict before the parent phase advances the next cross-mission skill PR — per **Planning protocol skills UX** § *Single-concern strategy*.
@@ -125,7 +130,7 @@ Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.s
 | **2d** — Inline **`pr-plan`** steps **1–4** | Auto-advance through §§1–4 draft | open items per **`pr-plan`** Step **5-open-items** when multiple gaps |
 | **§5c** — Implementation handoff (inline **`pr-plan`**) | **Gate** — **first developer-pick gate on this lane** | **`pr-plan`** §5c — start coding session (below) |
 | **§5d** — Spawn **`coding-session`** | Act-after-select; **#external-wait** on detached child | — |
-| **§5e** — Aggregate **`coding-session`** child | **#external-wait**; re-emit terminal when child completes | — |
+| **§5e** — Aggregate **`coding-session`** child | **#external-wait**; while child active, wait modal **must** include **Plan Change** | [Plan Change while coding-session open](#plan-change-while-coding-session-open-binding) |
 | **3** — Terminal **`mission_control_send_agent_result`** | Auto-advance after §5e merge or honest `partial` / `failure` | exception: blocked handoff → report without prose idle |
 
 ### Missing inputs gate (binding)
@@ -203,9 +208,29 @@ USER_CHECKPOINT — approve implementation handoff and start coding session (inl
 
    - **Next-step resolution:** **`start-coding-session`** → run **2e** §5d spawn; other picks → re-offer §5c or defer per **`pr-plan`** rules — no prose-only idle.
 
-   **2e. Spawn and aggregate **`coding-session`** — when developer picks **`start-coding-session`**, run **`pr-plan`** §5d **`mission_control_spawn_agent`** then §5e child aggregation. **#external-wait** until child terminal; merge child **`outputs`** before step **3**.
+   **2e. Spawn and aggregate **`coding-session`** — when developer picks **`start-coding-session`**, run **`pr-plan`** §5d **`mission_control_spawn_agent`** then §5e child aggregation. **#external-wait** until child terminal; merge child **`outputs`** before step **3**. While the child is open, every wait / resume modal **must** include **Plan Change** — see [Plan Change while coding-session open](#plan-change-while-coding-session-open-binding).
 
-   - **Next-step resolution:** Auto-advance to step **3** after §5e merge or honest blocked handoff. **Forbidden:** prose-only idle at external-wait surfaces — use structured resume options per rule **2** § *External-wait / next-step modal*.
+   - **Next-step resolution:** Auto-advance to step **3** after §5e merge or honest blocked handoff. **Forbidden:** prose-only idle at external-wait surfaces — use structured resume options per rule **2** § *External-wait / next-step modal* **and** include **`plan-change`**.
+
+### Plan Change while coding-session open (binding)
+
+After §5d spawn and until the **`coding-session`** child is terminal, this lane is the quick-fix **planner** surface. Continuity / external-wait modals **must** include:
+
+| Option id | Label (brief) | Action |
+|-----------|---------------|--------|
+| `plan-change` | Plan Change — revise PR plan and notify coding-session | Act below |
+| `check-child-status` | Check coding-session / resume wait | Stay in §5e aggregation |
+| `more-details` | More details for option _ | Elaborate; re-ask |
+
+USER_CHECKPOINT — quick-fix-plan wait while coding-session is open (must include Plan Change).
+
+**Plan Change act:**
+
+1. Revise the child PR plan (and/or minimal parent list wording) on the main hosting clone operations path.
+2. Call **`mission_control_notify_child_lanes`** targeting the open **`coding-session`** slug when the edit is material per **`pr-plan/SKILL.md`** § *Plan-change notify — emit-when* (one slug; host flag may skip delivery when off — still emit when emit-when applies).
+3. Re-open the wait modal — still include **`plan-change`**.
+
+**Forbidden:** omit **Plan Change** while **`coding-session`** is open; rely only on child notify-**receive** without this parent offer.
 
 3. **Emit child terminal **`mission_control_send_agent_result`** per **`## Completion (spawned)`** below.
 
@@ -223,6 +248,18 @@ USER_CHECKPOINT — approve implementation handoff and start coding session (inl
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below; **forbidden** while open **`coding-session`** or mid-scaffold |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| Open **`coding-session`** child; scaffold / handoff still in progress | **Forbidden** |
+| True skill terminal (scaffold + inline **`pr-plan`** / child merge complete, or abandon) | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "quick-fix-plan-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`.sedea/centers/sedea/skills/README.md`** § *Optional parent refocus* and **`../../plan-and-deliver/skills/README.md`** § *Parent refocus on terminal*.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 

@@ -1,8 +1,8 @@
-# Mission Control display metadata — host spec pointer (R&D)
+# Mission Control display metadata — host spec pointer (Software Development)
 
-This document is a **read-only pointer** for R&D agents and plan authors. The **host implementation** lives in the **active hosting repo** Mission Control host integration (not in the **research-and-development** center git repo). Do not treat this file as the normative authority table — use [`.sedea/centers/sedea/rules/9_display-metadata-authority.mdc`](.sedea/centers/sedea/rules/9_display-metadata-authority.mdc).
+This document is a **read-only pointer** for R&D agents and plan authors. The **host implementation** lives in the **active hosting repo** Mission Control host integration (not in the **software-development** center git repo). Do not treat this file as the normative authority table — use [`.sedea/centers/sedea/rules/9_display-metadata-authority.mdc`](.sedea/centers/sedea/rules/9_display-metadata-authority.mdc).
 
-Phase **1** (host persistence + MCP tools) must be merged before agents rely on governed updates. Phase **2** PR **1** added rule **9**; this doc supports PR **2** (R&D rules + development-process cross-links).
+Phase **1** (host persistence + MCP tools) must be merged before agents rely on governed updates. Phase **2** PR **1** added rule **9**; this doc supports PR **2** (Software Development rules + development-process cross-links).
 
 ---
 
@@ -27,8 +27,11 @@ Mission Control persists display metadata in **`dispatch-tab.v1.json`** under ea
 |------|--------|---------|
 | `mission_control_update_lane_display` | Agent on a lane | Own slot `title`, `description`, `hoverDescription` |
 | `mission_control_update_dispatch_display` | Squad Leader | `dispatchTitle`, `dispatchDescription`, `dispatchHoverDescription` |
+| `mission_control_update_relevant_documents` | Agent on a lane | Append authored/materially edited paths to calling slot `relevantDocuments` |
 
-Audit: successful updates append **`display-metadata-updated`** events to **`dispatch-events.v1.ndjson`**. Agents must not edit bundle JSON directly.
+**Documents vs chrome:** Relevant Links registration is **not** display-metadata chrome — see [rule **50**](../rules/50_mission-control-display-metadata-discipline.mdc) § *Relevant Links (documents)* and [plan-and-deliver skills README](../missions/plan-and-deliver/skills/README.md) § *Relevant Links — post-write registration*.
+
+Audit: successful display updates append **`display-metadata-updated`** events to **`dispatch-events.v1.ndjson`**. Agents must not edit bundle JSON directly.
 
 ---
 
@@ -49,12 +52,12 @@ Audit: successful updates append **`display-metadata-updated`** events to **`dis
 
 Mission Control host source, limits, and integration tests live in the **active hosting repo**, not in this center submodule. **Do not** embed product-specific directory paths here — resolve implementation file paths from **`.cursor/rules/dot-sedea.mdc`** (or equivalent host overlay) on the repo that ships Mission Control.
 
-R&D center agents **reference** host overlay docs in plans; **implement** host changes in the hosting repo, not in this center submodule.
+Software Development center agents **reference** host overlay docs in plans; **implement** host changes in the hosting repo, not in this center submodule.
 
 ---
 
 ## Related R&D governance
 
-- R&D discipline rule: [`.sedea/centers/research-and-development/rules/50_mission-control-display-metadata-discipline.mdc`](../rules/50_mission-control-display-metadata-discipline.mdc)
+- Software Development discipline rule: [`.sedea/centers/research-and-development/rules/50_mission-control-display-metadata-discipline.mdc`](../rules/50_mission-control-display-metadata-discipline.mdc)
 - Platform authority: [`.sedea/centers/sedea/rules/9_display-metadata-authority.mdc`](.sedea/centers/sedea/rules/9_display-metadata-authority.mdc)
 - Agent UX pitfalls: [`.sedea/centers/research-and-development/docs/development-process.md`](development-process.md) § *Agent UX pitfalls*

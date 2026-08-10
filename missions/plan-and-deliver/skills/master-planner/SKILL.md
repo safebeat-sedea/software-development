@@ -10,7 +10,7 @@ description: >-
  complexity score from §4–§5; when **high**, recommends Delivery phases via Route §6 to split into lower-complexity phase plans via `delivery-phases`/`phase-planner`. Section 6 (Delivery phases | PR breakdown)
  and section 7 (Caveats) stay as TBD stubs for follow-up turns. Use when the user
  opens a fresh planning chat from the "feature plan: design + changes"
- plan-board prompt, or says "master-planner" / "draft a master plan".
+ prompt, or says "master-planner" / "draft a master plan".
 designation:
   allowed: Master Plan authoring; inline pr-breakdown, new-plan, pr-plan on planning lane
   forbidden: Application implementation; worktree ship; mission_control_propose_dispatch_resolution on child
@@ -45,9 +45,7 @@ laneRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/master-planner/SKILL.md"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc"
 ---
 
@@ -63,24 +61,28 @@ The procedure below is a hard contract — do **not** skip steps, re-order them,
 
 **Worktree removal ownership (binding).** This skill is planning-only — it does **not** create or remove hosting-repo worktrees. **Do not remove worktrees you do not own.** **`git worktree list` is read-only** unless rule **0** § *Worktree ownership* preconditions hold for **that** path. Ship worktrees belong to **`coding-session`** on a separate lane.
 
+## Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up* / *Definitive `laneRules`*. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table; spawners may omit run-request **`laneRules`** when identical (README spawn preflight row 11). **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up* / *Definitive `laneRules`*. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table; spawners may omit run-request **`laneRules`** when identical (README spawn preflight row 11). **384 KiB cap:** frontmatter omits **`plan.mdc`**, **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader ledger, spawn/wait |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | NFD process templates |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Slim spawn contracts, terminal stop |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Target resolution, depth-first gates |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `plan.mdc`, `development-process.md`, `planning-mode-templates.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -89,7 +91,7 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice, AskQuestion |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Planning target resolution (role minimum) |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/master-planner/SKILL.md` | This skill procedure |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight, definitive `laneRules` |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight M1–M9, definitive `laneRules` |
 
 ## Agent messaging (MCP)
 
@@ -104,20 +106,30 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 **Binding:**
 
 - Run **`../README.md`** § *MCP spawn preflight* (rows M1–M8) before every MCP spawn; **forbidden** host-resolved identity keys in MCP args (`correlationId`, `dispatchId`, `slotId`, … — see README § *Host-resolved identity*).
-- Run **`../README.md`** § *MCP notify preflight* (rows N1–N8) before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+- `Read` **`docs/spawn-ship-contracts.md`** § *MCP notify preflight* (rows N1–N8) — then run notify preflight before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
+- **Relevant Links (post-write):** After each Write/StrReplace that **creates or materially edits** the Master Plan (or other ops plan under the plans union), call MCP **`mission_control_update_relevant_documents`** with absolute path(s) (`kind: plan`) on this lane — same turn preferred. **Skip** read-only loads, warm-up paths, and paths already registered this session with no content change. Does **not** replace terminal `masterPlanPath` / path outputs. See **`../README.md`** § *Relevant Links — post-write registration*.
 
 ### Plan-change notify — emit-when (`mission_control_notify_child_lanes`)
 
-After a **material** Master Plan edit that affects **ongoing work** on named **non-terminal** child lanes, notify each affected child with a **separate** MCP call (one slug per call, v1). Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+After a **material** Master Plan edit that affects named child lanes (active **or** terminal **`phase-planner`** per rule **4** § *Planner-lane wake*), notify each affected child with a **separate** MCP call (one slug per call, v1). Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 
 | Emit when | Target child slugs (examples) | Do not notify |
 |-----------|------------------------------|---------------|
-| Material edit to §§1–7, **`### Delivery phases`** rows, or §6 decomposition scope changes **`affectedPlanPaths`** for open children | **`phase-planner`** children on active Delivery phases rows; nested **`pr-breakdown`** / **`new-plan`** / **`coding-session`** lanes listed in **`activeLanes`** with non-terminal **`continuationStatus`** | Terminal lanes (`continuationStatus: terminal`, completed without active continuation); empty or speculative **`targetSlugs`**; broadcast fan-out |
+| Material edit to §§1–7, **`### Delivery phases`** rows, or §6 decomposition scope changes **`affectedPlanPaths`** for affected children | **`phase-planner`** slugs on Delivery phases rows (including **terminal** / ship-complete phases when the edit adds PRs or revises that phase plan path); nested **`pr-breakdown`** / **`new-plan`** / **`coding-session`** lanes listed in **`activeLanes`** with non-terminal **`continuationStatus`** | Empty or speculative **`targetSlugs`**; broadcast fan-out; duplicate spawn when a planner slug already exists for the plan path |
 
-**Material edit** includes: scope/sequencing changes on **`Delivery phases`** or PR breakdown blocks, §4–§5 architectural or Changes bullets that alter child plan paths, and ledger updates that change what a named open child should implement — not typo-only or §7 Caveats-only edits with no child impact.
+**Material edit** includes: scope/sequencing changes on **`Delivery phases`** or PR breakdown blocks, §4–§5 architectural or Changes bullets that alter child plan paths, adding PR rows to a **ship-complete** phase plan, and ledger updates that change what a named child should implement — not typo-only or §7 Caveats-only edits with no child impact.
 
-**Forbidden:** empty or speculative **`targetSlugs`**; notify terminal children; implicit fan-out or **`notifyAllDescendants`**; using notify instead of **`mission_control_spawn_agent`** for new work.
+**Forbidden:** empty or speculative **`targetSlugs`**; implicit fan-out or **`notifyAllDescendants`**; using notify instead of **`mission_control_spawn_agent`** for **first-time** row expansion with no prior slug; **duplicate `phase-planner` spawn** when registry lookup finds an existing slug for the same **`targetPlanPath`** / **`parentIndex`** — notify that slug instead (rule **4** § *Spawn vs notify*).
+
+### Spawn vs notify — phase-planner registry lookup (binding)
+
+Before **`expand-next-eligible`**, inline **`delivery-phases`** handoff, or **`new-plan`** populator spawn for Delivery phases index **N**:
+
+1. Resolve the phase **`Plan:`** link (or pending stub path) for row **N**.
+2. Look up a prior **`phase-planner`** slug from **`activeLanes`**, **`spawnedPlans`**, terminal **`mission_control_send_agent_result`** history, or Mission Control lane registry keyed by **`targetPlanPath`** + **`parentIndex`**.
+3. When a slug exists (active **or** terminal): call **`mission_control_notify_child_lanes`** per emit-when — **forbidden** **`mission_control_spawn_agent`** for a second **`phase-planner`** on the same plan path.
+4. When no slug exists: proceed with inline **`new-plan`** + **`phase-planner`** spawn per existing contracts.
 
 ### MCP notify preflight (`mission_control_notify_child_lanes`)
 
@@ -126,11 +138,11 @@ After a **material** Master Plan edit that affects **ongoing work** on named **n
 | N1 | Caller authority — **`master-planner`** may notify descendant slugs only (rule **4** § *MCP notify protocol* caller table) |
 | N2 | Required args present: **`summary`**, **`changeType`**, **`affectedPlanPaths`** (non-empty), **`targetSlugs`** (exactly one slug) |
 | N3 | **Forbidden args absent** — no host-resolved identity keys, no **`notifyAllDescendants`** |
-| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique **non-terminal** child slug per call |
+| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique child slug per call (terminal **`phase-planner`** slugs allowed per rule **4** § *Planner-lane wake*) |
 | N5 | **`affectedPlanPaths`** lists every operations plan path that grounds the change (Master Plan + affected child plans when applicable) |
 | N6 | Multiple children → **separate MCP calls** (one slug per call, v1) |
-| N7 | Enumerate targets from **`activeLanes`** / registry — omit terminal lanes before calling |
-| N8 | New lanes or new work → **`mission_control_spawn_agent`** — never notify as a spawn workaround |
+| N7 | Enumerate targets from **`activeLanes`** / registry / **`spawnedPlans`** — include **terminal planner** slugs when **`affectedPlanPaths`** intersects; omit terminal **leaf** lanes (`coding-session`) per rule **4** § *Leaf-lane omission* |
+| N8 | **First-time** row expansion with no prior slug → **`mission_control_spawn_agent`** — never notify as a spawn workaround; when slug exists → notify, never duplicate spawn |
 
 ### Plan-change notification receive (child lane)
 
@@ -186,6 +198,8 @@ See [`.sedea/centers/research-and-development/rules/50_mission-control-display-m
 ## Spawn contract (`mission_control_spawn_agent`)
 
 Cross-check every spawn against **`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md`** § *MCP spawn preflight* before calling the tool.
+
+**Spawn-ack semantics (binding):** MCP **`mission_control_spawn_agent`** returns **`transcriptOnly`** acknowledgment — **not** host spawn success. Before external-wait, yield, or narrating *"spawned child"*, follow [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc) § *Spawn-ack semantics (binding)* — ack ≠ success, no parallel spawn + wait modal on the same turn, verify host-visible child lane before wait. Cross-reference only; do **not** duplicate the full block here.
 
 ### Inbound — Squad Leader → **master-planner** (`plan and deliver` §5)
 
@@ -269,13 +283,17 @@ There is **no required model tier** for this skill: proceed to Step 2 either way
 
 - **Next-step resolution:** Auto-advance to Step **2** after the optional model line — no `USER_CHECKPOINT` on this step.
 
-## Step 2 — Load the development-process doc, in full
+## Step 2 — Load development-process core and planning templates
 
-Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit**. The whole file. This is a **standards document**, not an executable plan — its sections describe the process you will apply, not work for you to perform. Acknowledge in one sentence that you have it loaded and that you will follow the **Master Plan template** for sections 4 and 5.
+1. Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit** (slim warm-up core — Strategy, Development tools index, Cadence reference). Acknowledge in one sentence that you have the core loaded.
 
-If the file has changed since you last knew it, the in-file template is the source of truth — not your memory.
+2. Before drafting Master Plan §§ 4–6 from templates, read `.sedea/centers/research-and-development/docs/planning-mode-templates.md` in full (**no offset, no limit**). Acknowledge: *"Loaded planning-mode-templates.md; will follow Master Plan template for §§ 4–6."*
 
-- **Next-step resolution:** Auto-advance to Step **3** after one-line acknowledgment — no `USER_CHECKPOINT` on this step.
+3. Read `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` §§ **5–6** only (spawn handover + decomposition ack — **not** full §§1–8 unless a step explicitly requires another section).
+
+If either doc changed since you last knew it, the on-disk file is the source of truth — not your memory.
+
+- **Next-step resolution:** Auto-advance to Step **3** after acknowledgments — no `USER_CHECKPOINT` on this step.
 
 ## Step 3 — Identify the target repo(s) and load architectural rules
 
@@ -498,30 +516,32 @@ _TBD_
 
 The literal `## 6. Delivery phases | PR breakdown` heading is the **deliberate, not-yet-decided** form documented in the dev-process doc's **§ 6 / § 5 contents rule**. When § 6 is drafted in a follow-up turn, the agent picks one of `Delivery phases` (the feature decomposes into phases) or `PR breakdown` (the feature is small enough to skip the phase layer) and rewrites the heading to the chosen value, dropping the other side. Until then, the dual heading communicates "decomposition pending" at a glance.
 
-Use uniform italic **`_TBD_`** for every pending section (scannable in Plan Board and GitHub; grep with `rg '^_TBD_$'`). Rationale and template rules: **`.sedea/centers/research-and-development/docs/development-process.md`** § *Master Plan template*.
+Use uniform italic **`_TBD_`** for every pending section (scannable in GitHub and operations plan files; grep with `rg '^_TBD_$'`). Rationale and template rules: **`.sedea/centers/research-and-development/docs/development-process.md`** § *Master Plan template*.
 
 Frontmatter rules carry over from the new-plan contract:
 
 - Do **not** put `parent:` in frontmatter. Parent lives in the sidecar.
-- Seed `todos:` with the one honest first todo shown above (so the Plan Board renders the plan as `not_started` until the user marks it in-progress).
+- Seed `todos:` with the one honest first todo shown above (so the plan renders as `not_started` until the user marks it in-progress).
 - `isProject: false` unless the user says otherwise.
 - Do not invent a `status:` field.
-- **Quote YAML scalar values that would otherwise mis-parse** — most commonly **`name:`** when the PRD title contains `: ` (colon + space). Follow the local `new-plan` skill's YAML-scalar rules for the full trigger list. PRD titles routinely use the form `Subject: clarifier`, which the YAML parser reads as a nested mapping unless the value is wrapped in **double quotes**, and that silently breaks the Plan Board tree label (snake-cased slug fallback) and todo rendering. When in doubt, quote.
+- **Quote YAML scalar values that would otherwise mis-parse** — most commonly **`name:`** when the PRD title contains `: ` (colon + space). Follow the local `new-plan` skill's YAML-scalar rules for the full trigger list. PRD titles routinely use the form `Subject: clarifier`, which the YAML parser reads as a nested mapping unless the value is wrapped in **double quotes**, and that silently breaks the operations plan tree label (snake-cased slug fallback) and todo rendering. When in doubt, quote.
 
 Write `<slug>.state.yaml` alongside:
 
 ```yaml
-# Sidecar for Plan Board (runtime). Plan: <slug>.plan.md
+# Sidecar for operations plan runtime. Plan: <slug>.plan.md
 parent: <resolved-parent-slug-or-null>
 worktrees: []
 prs: []
 ```
 
-Both files must be written in the same skill turn so the Plan Board picks the plan up cleanly on first scan.
+Both files must be written in the same skill turn so the operations plan pair is consistent on first write.
 
-After writing, link the plan file with an absolute path so the user can click through:
+After writing, present the plan file as a backtick path so Mission Control can open it. Prefer the hosting-absolute path; a `.sedea/operations/…/plans/…` path is also valid:
 
-> Plan file: [`<slug>.plan.md`](file:///<absolute-targetPlanPath>)
+> Plan file: `<absolute-targetPlanPath>`
+
+Do **not** wrap a backtick label in a `file://` Markdown link (for example `` [`<slug>.plan.md`](file:///<absolute-targetPlanPath>) ``); that shape is mangled by transcript Markdown parsing.
 
 ## Step 6 — Draft sections 1 through 5 into the plan file
 
@@ -576,7 +596,24 @@ One or more diagrams showing what the implementation will look like. Pick the di
 - State diagram — lifecycle / state-machine changes.
 - ER / schema diagram — data model or database changes.
 
-Use **Mermaid** (in fenced ```mermaid blocks) so the diagrams render in Cursor and on the Plan Board. Include only what is necessary to understand the *shape*; don't draft pseudocode here. If multiple diagrams are needed, label each one.
+Use **Mermaid** (in fenced ```mermaid blocks) so the diagrams render in Cursor and in GitHub. Include only what is necessary to understand the *shape*; don't draft pseudocode here. If multiple diagrams are needed, label each one. Follow [`.sedea/centers/sedea/docs/mermaid-authoring.md`](.sedea/centers/sedea/docs/mermaid-authoring.md) — opaque ids, sequence `Note` single-line (no `<br/>`, no bare `;`), sequence message labels without bare `;`, flowchart-only `<br/>` in quoted node labels.
+
+**High-risk abbreviations:** Never use uppercased reserved keywords as bare ids — e.g. `OPT`, `ALT`, `END`, `LOOP`, `PAR`, `AND`, `AS` (Mermaid matches case-insensitively → `opt`, `alt`, …). Prefer opaque ids + labels (`participant scopeOpts as OPT`, `participant ScopeOpts as Scope options`). Do **not** reuse a flowchart node id as a sequence `participant` id.
+
+### Step 6b-lint — Post-write Mermaid lint (binding)
+
+After the §4 Architectural design StrReplace (any fenced ```mermaid in the Master Plan), and **before** Step **6c** complexity scoring, **Echo to chat**, or Step **7** AskQuestion:
+
+1. From **`HOSTING_ROOT`**, run:
+
+   ```bash
+   node .sedea/centers/sedea/scripts/verify-mermaid-authoring.mjs "<absolute-path-to-master-plan>"
+   ```
+
+2. **Exit 0** → continue. **Non-zero** → fix reserved bare ids / Note bodies / message-label semicolons in the plan file, re-run until exit **0**.
+3. **Forbidden:** complexity echo or Step **7** with failing Mermaid.
+
+Re-run after any Mermaid-only revise before re-echo.
 
 ### § 5 Changes
 
@@ -648,7 +685,7 @@ When band is **high**, Step 7a must say e.g. *"Complexity: high (overall score =
 
 ### Echo to chat
 
-After writing §§ 1–5 **and** `### Complexity score` into the plan file, **echo all five sections in the chat reply** — including **`### Decomposition assessment`** and **`### Complexity score`** under `## 5. Changes` — so the user can review without opening the file. The plan file is the source of truth; the chat copy is a review surface. Use the same section headers (`## 1. Background`, etc.) so the chat output aligns line-for-line with the file. **Also** echo the **band** and **three table values** above or below the echoed sections (see Step 6c **Chat (required)**).
+When §4 contains Mermaid, confirm **Step 6b-lint** passed first. After writing §§ 1–5 **and** `### Complexity score` into the plan file, **echo all five sections in the chat reply** — including **`### Decomposition assessment`** and **`### Complexity score`** under `## 5. Changes` — so the user can review without opening the file. The plan file is the source of truth; the chat copy is a review surface. Use the same section headers (`## 1. Background`, etc.) so the chat output aligns line-for-line with the file. **Also** echo the **band** and **three table values** above or below the echoed sections (see Step 6c **Chat (required)**).
 
 ### What NOT to draft
 
@@ -690,15 +727,35 @@ Invoke **AskQuestion** or **`mission_control_present_structured_choice`** in the
 
 **Phase-planner child active (binding):** When **`activeLanes`** (from inline **`delivery-phases`** / **`new-plan`** merge or bubbled **`mission_control_send_agent_result`**) includes **`continuationOwner: "phase-planner-agent"`** with **`continuationStatus: "active"`** for a **`Delivery phases`** row, **do not** offer **`route-6`**, **`expand-eligible-pr`**, **`expand-next-phase`**, or other phase-scoped decomposition options for that row on this **Master Plan** lane. Acknowledge in one line (phase slug, child lane id when known) and tell the developer to continue on the **phase-planner** child lane. Re-offer Step **7b** master-plan options only after **`phaseShipComplete`** for that phase or explicit defer/abandon — see **`phase-planner`** § *Phase delivery ownership*.
 
-**Inline `pr-plan` handoff pending (binding):** When **`spawnedPlans`** includes a PR plan whose inline merge reports **`implementationHandoffStatus`** in **`not-offered`**, **`offered`**, or **`spawned-coding-session`** (and no terminal **`coding-session`** yet), **omit** **`route-6`**, **`draft-7`**, and other master-plan options until §5c resolves or the **`coding-session`** child completes — **except** when merge includes **`prPlanHandoffSkipped: true`** (**`pr-breakdown`** **`approve-list`** auto-chain; §5c deferred). Then offer Step **7b** menus and an option to open inline **`pr-plan`** §5c on that **`targetPlanPath`** (for example *Start coding session — PR plan ready*). Offer **`pr-plan`** §5c options (or continue waiting on an open **`coding-session`** child) on **this lane** when **`prPlanHandoffSkipped`** is absent — see Step **7c** *Pending inline `pr-plan` handoff*.
+**Inline `pr-plan` handoff pending (binding):** When **`spawnedPlans`** includes a PR plan whose inline merge reports **`implementationHandoffStatus`** in **`not-offered`** or **`offered`** ( **`coding-session`** not yet spawned), **omit** **`route-6`**, **`draft-7`**, and other master-plan options until §5c resolves — **except** when merge includes **`prPlanHandoffSkipped: true`** (**`pr-breakdown`** **`approve-list`** auto-chain; §5c deferred). Then offer Step **7b** menus and an option to open inline **`pr-plan`** §5c on that **`targetPlanPath`** (for example *Start coding session — PR plan ready*). Offer **`pr-plan`** §5c options on **this lane** when **`prPlanHandoffSkipped`** is absent — see Step **7c** *Pending inline `pr-plan` handoff*.
 
-**Primary next moves (all complexity bands)** — include at minimum:
+**Plan entered execution (binding — Plan Change offer):** When any PR under this Master Plan tree reports **`implementationHandoffStatus: spawned-coding-session`**, or **`activeLanes`** includes a non-terminal **`coding-session`** child, the plan has **entered execution**. On every Step **7b** modal while that remains true:
+
+| Rule | Requirement |
+|------|-------------|
+| **Must include** | **`plan-change`** — *Plan Change — revise plan and notify open children* |
+| **May include** | Wait / ack for open child, **`pause`**, **`more-details`**, and other non-decomposition options that do not start a new §6 route |
+| **Still omit** | **`route-6`**, **`draft-7`**, expand options that would steal an active **`phase-planner`** subtree — unless that phase is ship-complete / deferred / abandoned |
+
+**Forbidden:** omit **Plan Change** once execution is open; treat child notify-**receive** as a substitute for this **offer**; auto-notify without a developer **Plan Change** (or equivalent revise) path on this lane.
+
+USER_CHECKPOINT — planner continuation while plan execution is open (must include Plan Change).
+
+**Primary next moves (all complexity bands)** — include at minimum **when execution has not started**:
 
 | Option id (example) | Label (brief) | Action |
 |---------------------|---------------|--------|
 | `route-6` | Route §6 — Delivery phases or PR breakdown | Step 7d → route **AskQuestion** → inline skill |
 | `draft-7` | Draft §7 Caveats | Inline §7 only |
 | `revise` | Revise a drafted section (§1–§5 or §7) | Step 7e |
+| `more` | More details for option _ | Elaborate, then re-ask |
+
+**When execution is open** — include at minimum:
+
+| Option id (example) | Label (brief) | Action |
+|---------------------|---------------|--------|
+| `plan-change` | Plan Change — revise plan and notify open children | Step 7c *Plan Change* |
+| `wait-child` | Wait / acknowledge open coding-session | Resume external-wait paths; no material plan edit |
 | `more` | More details for option _ | Elaborate, then re-ask |
 
 **When complexity is high (C > 20)** — **include `route-6`** (same as low/medium — do not withhold §6 at high band). In recap / **`displayMarkdown`**, recommend **Delivery phases** over **PR breakdown** and name the downstream chain (**`delivery-phases`** → **`new-plan`** → **`phase-planner`**). At Step **7c** route **AskQuestion**, list **Delivery phases** first with a brief label such as *Delivery phases — recommended (split into phase plans)* and **PR breakdown** second with caution such as *PR breakdown — skips phase layer; usually not for high band*. Also offer **revise §4**, **revise §5** when the user wants to narrow before decomposing. The **Squad Leader** must **never** run **`delivery-phases`** or **`pr-breakdown`** — only this **master-planner** lane runs them inline after **`route-6`**.
@@ -744,7 +801,7 @@ Execute **only** what the user selected in **AskQuestion** (or the matching **`o
 
 **Pending inline `pr-plan` handoff (binding):** When inline **`pr-breakdown`** / **`new-plan`** merged fields show a fresh PR plan with **`implementationHandoffStatus: not-offered`** or **`offered`** (§5c open, **`coding-session`** not yet spawned), **do not** offer Step **7b** **`route-6`** / master-plan menus on this turn — **unless** **`prPlanHandoffSkipped: true`** (auto-chain after **`approve-list`**). In that case continue Step **7b**; offer **Start coding session** via re-entering inline **`pr-plan`** §5c on **`targetPlanPath`**. When **`prPlanHandoffSkipped`** is absent, **re-enter** inline **`pr-plan`** §5c–§5e on **this Master Plan lane** (same **`targetPlanPath`**) until the developer picks **Start coding session**, **`defer`**, or a **`coding-session`** child terminal arrives. **PRD source is irrelevant** — every **`plan and deliver`** dispatch reaches **`master-planner`** only after Squad Leader §3 **`author-prd`** approval; only **`pr-plan`** §5c–§5d opens **`coding-session`**.
 
-**Spawn-chain ship notifications:** When Mission Control delivers **`agent-result-response delivered`** with **`outputs.prShipComplete`** or **`outputs.phaseShipComplete`** (bubbled from **`coding-session`** → **`pr-plan`** / **`new-plan`** → **`pr-breakdown`** / **`phase-planner`** → **`delivery-phases`**), merge into the ledger per **`../README.md`** § *Upstream ship-complete notification*, **re-emit updated** **`mission_control_send_agent_result`** (same **`correlationId`**) when this lane is standalone spawned, then return to Step **7b** with expand options when indices unlock.
+**Spawn-chain ship notifications:** When Mission Control delivers **`agent-result-response delivered`** with **`outputs.prShipComplete`** or **`outputs.phaseShipComplete`** (bubbled from **`coding-session`** → **`pr-plan`** / **`new-plan`** → **`pr-breakdown`** / **`phase-planner`** → **`delivery-phases`**), merge into the ledger per `docs/spawn-ship-contracts.md` § *Upstream ship-complete notification*, **re-emit updated** **`mission_control_send_agent_result`** (same **`correlationId`**) when this lane is standalone spawned, then return to Step **7b** with expand options when indices unlock.
 
 #### Parallel **`hosting-repo-rules`** fork after **`coding-session`** terminal (fire-and-forget)
 
@@ -781,7 +838,7 @@ When Mission Control delivers a **`coding-session`** child **`mission_control_se
 
 **Forbidden:** blocking next-row PR expand until rules PR merges; separate **`shipRows`** sub-row; adding rules lane to **`pendingByParent`**.
 
-Normative overview: **`../README.md`** § *Parallel **`hosting-repo-rules`** fork (fire-and-forget)* and **`hosting-repo-rules/SKILL.md`** § *Spawn trigger*.
+Normative overview: `docs/spawn-ship-contracts.md` § *Parallel **`hosting-repo-rules`** fork* and **`hosting-repo-rules/SKILL.md`** § *Spawn trigger*.
 
 ### Resume / PR-expand handoff (binding)
 
@@ -836,12 +893,24 @@ Set **`continuationStatus: terminal`** and empty **`remainingTasks`** **only whe
 
 When (2) holds but §7 is still **`_TBD_`**, keep **`continuationStatus: active`**, offer **`draft-7`**, list **`Draft §7 Caveats`** in **`remainingTasks`**. When §7 is drafted but **`pending`**, keep **`active`**, list **`Approve §7 Caveats`** in **`remainingTasks`**, offer **`approve-caveats`** / **`revise-caveats`** / **`skip-caveats`** — **not** terminal status.
 
+#### Plan Change (`plan-change`) — after execution (binding)
+
+Run when the developer selects **`plan-change`** from Step **7b** while execution is open (see *Plan entered execution* above).
+
+1. **Scope pick** — structured choice: which plan path(s) / Master Plan section(s) to revise (Master Plan §§1–5 / §7; or name a child PR / phase plan path from the ledger). Include **More details for option _**.
+2. **Revise** — apply the material edit (reuse Step **7e** discipline for Master Plan sections; for child plans, edit the named `.plan.md` on the main hosting clone operations path).
+3. **Notify** — for each affected child whose work intersects the edit, call **`mission_control_notify_child_lanes`** per § *Plan-change notify — emit-when* and **`../README.md`** § *MCP notify preflight* (one slug per call; `changeType: plan-revision` unless clarifying/cancelling). Include **terminal `phase-planner`** slugs when the edit affects their anchored plan path (rule **4** § *Planner-lane wake*) — run § *Spawn vs notify — phase-planner registry lookup* before any new spawn.
+4. **Re-offer Step 7b** — while execution remains open, **must** still include **`plan-change`**.
+
+**Forbidden:** material plan edit after execution without offering **Plan Change** on this lane first (developer-initiated revise that explicitly names the section in the same message may satisfy act step 2 without a prior modal pick — still notify per emit-when); skip notify when emit-when applies.
+
 #### Revise section (`revise`) — Step 7e
 
 1. **AskQuestion:** which section — **§1 Background** … **§5 Changes** or **§7 Caveats** (not §6; owned by decomposition agents).
 2. Collect feedback via **prompt** / **More details for option _** if needed.
 3. Apply edit to **that section only**; re-run Step 6c after §4 or §5 edits.
 4. Flag sibling issues; do not fix silently.
+5. When execution is open and the edit is **material** per emit-when, run Step **7c** *Plan Change* notify steps **3–4** (or direct the developer to **`plan-change`** if scope spans child plans).
 
 #### Operations git requests (binding)
 
@@ -883,6 +952,22 @@ Required `outputs` fields (populate the JSON `outputs` object on the MCP result 
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below; **forbidden** while **`continuationStatus: active`** or §7 approval pending |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| **`continuationStatus: active`** | **Forbidden** |
+| **`caveatsApprovalStatus: pending`** or §7 approval AskQuestion still open | **Forbidden** |
+| Open nested **`phase-planner`** / **`coding-session`** / **`hosting-repo-rules`** work; notify-only turns | **Forbidden** |
+| **`continuationStatus: terminal`** (skill-complete; §7 gate satisfied or abandoned) | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "master-planner-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Forbidden:** structured-choice options whose primary purpose is parent-switch — use **`mission_control_refocus_parent_lane`** instead.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 
@@ -900,7 +985,7 @@ Required `outputs` fields:
 - `outputs.expandEligibleIndices`, `outputs.expandNextEligibleIndex` — echo from inline decomposition after spawn-chain ship-complete merges
 - `outputs.prShipComplete`, `outputs.phaseShipComplete` — when this lane merged bubbled ship terminals from nested **`coding-session`** / **`phase-planner`** chains
 - Product PR row ledger (parallel rules fork) — per affected PR row when Step **7c** spawns or merges **`hosting-repo-rules`**: **`rulesUpdatesStatus`** (`not-spawned` | `spawned` | `in-progress` | `complete` | `failed` | `abandoned`), optional **`hostingRepoRulesCorrelationId`**, optional **`rulesPrUrl`**
-- `outputs.parentPlanningFollowUpNotification`, `outputs.parentPlanningFollowUps`, `outputs.pendingParentFollowUps` — when bubbled from nested **`coding-session`** with parent follow-up notification (**`../README.md`** § *Upstream parent follow-up notification*)
+- `outputs.parentPlanningFollowUpNotification`, `outputs.parentPlanningFollowUps`, `outputs.pendingParentFollowUps` — when bubbled from nested **`coding-session`** with parent follow-up notification (`docs/spawn-ship-contracts.md` § *Upstream parent follow-up notification*)
 - `outputs.implementationHandoffStatus` — `not-offered` | `offered` | `deferred` | `spawned-coding-session` merged from inline **`pr-plan`** (required when a PR plan handoff is pending or completed on this lane)
 - `outputs.spawnCorrelationId` — UUID from inline **`pr-plan`** §5d when **`implementationHandoffStatus`** is **`spawned-coding-session`**
 

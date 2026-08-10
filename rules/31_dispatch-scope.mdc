@@ -7,7 +7,7 @@ alwaysApply: false
 
 # Dispatch scope (supersedes operations user id)
 
-**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/research-and-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole R&D `alwaysApply: true` bootstrap. Read **this file** when you need **`dispatchId`**, **`operationsDocsDirectory`**, or DbOnly terminal dispatch binding — not on every dispatch warm-up.
+**On-demand rule.** Mission Control warm-up loads [`.sedea/centers/research-and-development/rules/bootstrap.mdc`](bootstrap.mdc) as the sole Software Development `alwaysApply: true` bootstrap. Read **this file** when you need **`dispatchId`**, **`operationsDocsDirectory`**, or DbOnly terminal dispatch binding — not on every dispatch warm-up.
 
 Normative hosting layout: [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § **Operations storage phases**, § **Dispatch persistence (DbOnly terminal)**, and § **Plans (dispatch-scoped discovery)**.
 
@@ -43,7 +43,7 @@ Operations **dispatch** persistence is **DbOnly terminal** (Phase 6). Follow Sed
 | **DbOnly (terminal — only supported)** | Dispatch CRUD via workspace DB + MCP; no epoch-folder discovery; no filesystem dispatch bundle IO |
 | ~~Phase 0 / Hybrid / FsReadOnly~~ | **Retired** — not supported |
 
-**Flag-off unsupported:** `sedea.features.dispatch-storage-rxdb: false` (or equivalent) surfaces an explicit error — it does **not** restore filesystem bundles.
+**DbOnly-only:** there is no supported flag-off, kill-switch, or feature-flag path that restores filesystem dispatch bundles or Hybrid / FsReadOnly IO. Agents must treat DbOnly as the only live contract — do not chase deleted storage-phase feature flags as overrides.
 
 Plans and docs under `.sedea/operations/.../plans/` and `docs/` remain filesystem for now (out of Phase 6 scope).
 

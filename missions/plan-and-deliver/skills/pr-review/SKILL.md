@@ -47,7 +47,7 @@ If Mission Control opened a session whose only intent is **`pr-review`** / *tria
 
 When a **global Cursor or developer rule** directs agents to use `gh` for GitHub tasks, that default **yields to this skill** for PR review-cycle operations. While inline **`pr-review`** is active on a **`coding-session`** lane, **`pr-review.mjs` is the only permitted interface** for comment collection, thread/review state, classification, reconciliation, replies, resolves, minimizes, and review re-requests — not generic `gh`, REST, or GraphQL substitutes.
 
-**Permitted `gh` on this skill (narrow allowlist):** Step 0 worktree/URL resolution in the **worktree**; **Step 1b CI status** (`gh pr checks`, `gh run view` / `gh run view --log-failed` for failing required checks — read-only introspection and log fetch only); **`merged-pr-proceed`** merge-state verify (`gh pr view` for **`state` / merge metadata only**); invoker-owned **`gh pr create`** upstream (not this skill). **`check-pr-status`**, manual review submission, rebase, and merge paths on **`coding-session`** may use `gh` for **status/control** only — they do **not** replace Step 1 comment collection or Step 5 reconciliation.
+**Permitted `gh` on this skill (narrow allowlist):** Step 0 worktree/URL resolution in the **worktree**; **Step 1b CI status** (`gh pr checks`, `gh run view` / `gh run view --log-failed` for failing required checks — read-only introspection and log fetch only); **`merged-pr-proceed`** merge-state verify (`gh pr view` for **`state` / merge metadata only**); **`approve-merge-pr`** merge inspect (rule **6** § *Merge inspect procedure* — `gh pr view` minimum fields: `state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,url` — read-only before any approve or merge mutate); invoker-owned **`gh pr create`** upstream (not this skill). **`check-pr-status`**, manual review submission, rebase, and merge paths on **`coding-session`** may use `gh` for **status/control** only — they do **not** replace Step 1 comment collection or Step 5 reconciliation.
 
 ## Structured choice (Mission Control)
 
@@ -69,6 +69,18 @@ Under Checkpoint trust, **happy-path** triage steps (Steps **0–3a**, **1b**, a
 
 **Implicit external-wait:** none on this inline skill — child **`pre-pr-review`** delivery and Squad Leader **`#external-wait`** resume are owned by **`coding-session`**, not **`pr-review`**.
 
+## Batch mode (`batchShipAuthorized` — binding)
+
+When **`coding-session`** or an **`implementation-session`** invoker sets **`batchShipAuthorized: true`** per [`.sedea/centers/sedea/docs/batch-ship-checkpoint-profile.md`](.sedea/centers/sedea/docs/batch-ship-checkpoint-profile.md):
+
+| Step | Batch behavior |
+|------|----------------|
+| **3b** / **4** disposition | **Skip gate** — auto **`apply-must-should`** when Must/Should/CI items exist |
+| Post-fix commit/push | **Skip gate** — auto commit + push when fixes landed |
+| External-wait cycle resume | **Skip** — re-triage until terminal or blocker |
+
+**Blockers** → stop with recap; invoker batch profile governs recovery. **Without **`batchShipAuthorized`**** — gates below apply unchanged.
+
 | Step | Checkpoint behavior | Gate |
 |------|---------------------|------|
 | **0** — Resolve PR + plan sidecar upsert | Auto-advance when PR identity known | exception: unresolvable PR → stop with recap |
@@ -77,9 +89,9 @@ Under Checkpoint trust, **happy-path** triage steps (Steps **0–3a**, **1b**, a
 | **2** — Filter handled comments | Auto-advance | — |
 | **3** — Validate and classify | Auto-advance — report prep only; no edits | — |
 | **3a** — Propose follow-ups | Auto-advance (handoff only; no plan mutation) | — |
-| **3b** / **4** — Report + disposition | **Gate** — mandatory developer pick before any Act | [Disposition gate](#step-4--report-and-disposition-gate) |
+| **3b** / **4** — Report + disposition | **Gate** — mandatory developer pick before any Act — **skip when **`batchShipAuthorized`** | [Disposition gate](#step-4--report-and-disposition-gate) |
 | **Approved fix pass** | Auto-advance through edits until commit/push required | exception: blocking tool/git failure |
-| **Post-fix commit/push** | **Gate** before `git commit` / `git push` when fixes landed | [Post-fix commit/push gate](#post-fix-commitpush-gate-binding) |
+| **Post-fix commit/push** | **Gate** before `git commit` / `git push` when fixes landed — **skip when **`batchShipAuthorized`** | [Post-fix commit/push gate](#post-fix-commitpush-gate-binding) |
 | **5** — GitHub reconciliation | Auto-advance **same turn** as push or skipped-only disposition pick | exception: stale Step **1** payloads → re-fetch first |
 | **Cycle resume** — wait for reviewers / new comments | Developer-input on **`coding-session`** — **not** external-wait prose | **`coding-session`** [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) |
 
@@ -117,13 +129,19 @@ Script: `.sedea/centers/sedea/scripts/pr-review.mjs` (reads PAT from `GH_TOKEN`,
 **`pr-review.mjs`** and **`plan-state.mjs`** run from **`HOSTING_ROOT`** (hosting repo whose root contains **`.sedea/`**), not from a worktree’s `git rev-parse --show-toplevel` alone. Canonical contract: [`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`](../../../../rules/20_efficient-pr-shipping.mdc) § *Hosting repo cwd for scripts (canonical)* and [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](../../../../rules/31_dispatch-scope.mdc) § *Legacy CLI (`plan-state.mjs`) — hybrid only*.
 
 - **`WORKTREE_ROOT`** — hosting repo worktree where you edit code (`git` / `gh` in Step 0).
-- **`HOSTING_ROOT`** — walk up until **`.sedea/centers/sedea/`** or **`.sedea/`** exists; **`cd "$HOSTING_ROOT"`** before **`node …/plan-state.mjs`** or **`node …/pr-review.mjs`**.
+- **`HOSTING_ROOT`** — walk up until **`.sedea/centers/sedea/`** or **`.sedea/`** exists; **`cd "$HOSTING_ROOT"`** before **`node …/plan-state.mjs`** or **`.sedea/centers/sedea/scripts/run-sedea-node.sh …/pr-review.mjs`**.
+
+### Node launcher for `pr-review.mjs` (binding)
+
+Invoke **`pr-review.mjs`** through **`.sedea/centers/sedea/scripts/run-sedea-node.sh`** — **never** bare **`node`**. The wrapper sources **`resolve-node.sh`** (Electron-as-Node in Sedea agent shells).
+
+**Forbidden fallbacks when the wrapper exits non-zero:** **`brew install node`** / other package-manager Node installs; **fnm** / **nvm** bootstrap to unblock agent scripts; borrowing Node from another application (Codex.app, foreign Electron, etc.). **Stop and ask** the developer via structured choice — do not improvise a runtime.
 
 The script reads input from (in order): **`PR_REVIEW_INPUT`** (absolute path to a JSON file — keeps payloads **outside** the repo).
 
 ### Input file and script: **always two separate steps**
 
-The point is a **reviewable JSON payload** and a **stable allowlisted shell command** (`node .sedea/centers/sedea/scripts/pr-review.mjs` only) — **never** `printf … && node …` in one line.
+The point is a **reviewable JSON payload** and a **stable allowlisted shell command** (`.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs` only) — **never** `printf … && run-sedea-node.sh …` in one line.
 
 1. **First step — write the input file only**
  Create a temp path outside the repo, e.g. `PRR_INPUT=$(mktemp /tmp/cursor-pr-review-input.XXXXXX)` (six trailing `X`). Use the **Write** tool to write the JSON to that **absolute** path (or a **Shell** that **only** writes the file and exits — **no** `&&` to the script).
@@ -131,17 +149,17 @@ The point is a **reviewable JSON payload** and a **stable allowlisted shell comm
 2. **Second step — run the script only**
  A **separate** **Shell** invocation (from **`HOSTING_ROOT`**, not the worktree root alone):
 
- `cd "$HOSTING_ROOT" && PR_REVIEW_INPUT="<absolute-path-from-step-1>" node .sedea/centers/sedea/scripts/pr-review.mjs`
+ `cd "$HOSTING_ROOT" && PR_REVIEW_INPUT="<absolute-path-from-step-1>" .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs`
 
  No `echo`/`printf`/heredoc, no redirection, no `&&` chaining write + script on this line.
 
 **Never** chain writing and executing in one shell line, for example:
 
-`printf '…' > /tmp/foo.json && node .sedea/centers/sedea/scripts/pr-review.mjs`
+`printf '…' > /tmp/foo.json && .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs`
 
 That defeats the two-step workflow (re-approval noise, hides the clean script-only command). **Never** use a shell `for` loop that overwrites the input file and calls the script each iteration — put the full sequence in **one** JSON payload (single object or **array** of commands) and run the script **once**.
 
-After success, `rm -f` the temp input file (optional). To invoke end-to-end: **Write** JSON to the temp path, then **Shell** the `cd … && PR_REVIEW_INPUT=… node …` line **once**.
+After success, `rm -f` the temp input file (optional). To invoke end-to-end: **Write** JSON to the temp path, then **Shell** the `cd … && PR_REVIEW_INPUT=… run-sedea-node.sh …/pr-review.mjs` line **once**.
 
 Input format — **one object** (single command) or a **JSON array** of command objects executed in order:
 
@@ -170,13 +188,14 @@ When this skill is active, **`pr-review.mjs` is the only permitted GitHub interf
 | PR identity in worktree (Step 0) | **`pr-for-branch`** script command or known **`prUrl`** |
 | CI status (Step 1b) | **`gh pr checks`**, **`gh run view`** / **`gh run view --log-failed`** — read-only |
 | Merge-state verify (`merged-pr-proceed`) | **`gh pr view`** for merge state only — no comment, thread, or review endpoints |
+| Merge inspect (`approve-merge-pr`) | **`gh pr view`** per rule **6** § *Merge inspect procedure* — minimum fields only; no comment, thread, or review endpoints |
 
 **Forbidden when this skill is active:** **`gh api`**, **`gh api graphql`**, **`gh pr view --json reviews,comments`**, or any REST / GraphQL call whose purpose is to collect, classify, reconcile, or verify PR review comments, threads, or reviews.
 
 **First-action invariant:** If invoker context, user context, or an open gate references **`pr-review`**, the first GitHub-touching shell in that turn must be the Step 1 collect array:
 
 ```bash
-cd "$HOSTING_ROOT" && PR_REVIEW_INPUT="<absolute-path>" node .sedea/centers/sedea/scripts/pr-review.mjs
+cd "$HOSTING_ROOT" && PR_REVIEW_INPUT="<absolute-path>" .sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs
 ```
 
 Run **Step 1b** (`gh pr checks`) immediately after Step 1 on the same turn. Checking PR status during an open **`pr-review`** cycle is **not** exempt from this invariant unless the active pick is **`merged-pr-proceed`** or **`check-pr-status`** on **`coding-session`** (merge metadata only).
@@ -215,7 +234,7 @@ Always confirm which PR is being reviewed (print URL and title) before proceedin
 
 #### Link the PR to its plan sidecar (idempotent)
 
-Before Step 1, attempt to upsert the resolved PR number into the Plan Board sidecar so `plan-reconcile` can later archive the plan when all linked PRs merge. This is the same `upsert-pr` call documented in rule **20** § *Commit and push cadence* step 4 ([`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`](../../../../rules/20_efficient-pr-shipping.mdc)) — running it here as well closes the gap when **`pr-review`** triage ends with all comments skipped (no follow-up commit-and-push pass, so that upsert never fires) or when the PR is otherwise quiet enough that no second push happens. The helper is idempotent, so running it on every **`pr-review`** invocation is harmless.
+Before Step 1, attempt to upsert the resolved PR number into the plan sidecar so `plan-reconcile` can later archive the plan when all linked PRs merge. This is the same `upsert-pr` call documented in rule **20** § *Commit and push cadence* step 4 ([`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`](../../../../rules/20_efficient-pr-shipping.mdc)) — running it here as well closes the gap when **`pr-review`** triage ends with all comments skipped (no follow-up commit-and-push pass, so that upsert never fires) or when the PR is otherwise quiet enough that no second push happens. The helper is idempotent, so running it on every **`pr-review`** invocation is harmless.
 
 **`plan-state.mjs`** lives in the center tree: `.sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs`. On Mission Control lanes, prefer spawn **`inputs.targetPlanPath`** when known; otherwise **`resolve --cwd "$WORKTREE_ROOT"`** discovers the anchored plan under **`.sedea/operations/…/plans/`** — do **not** construct **`.sedea/operations/.../...`** or **`joint/plans`** paths. See rule **31** § *Dispatch scope (binding)*.
 
@@ -354,6 +373,14 @@ Under Checkpoint trust on the invoker **`coding-session`** lane, **auto-advance*
 
 One-line recap of counts + implicit pick, then **Act** on the **next** turn (or same turn for skipped-only → Step 5). **Exception — gate required:** ambiguous classification, Rule-update mixed with Must when paths unclear, or developer named a non-default path — emit the modal below.
 
+**`fix-ci-only` same-turn loop (Checkpoint — binding):** After auto-advancing **`fix-ci-only`**, the agent **must** investigate all failing required checks (`gh run view` / logs), apply worktree patches, commit/push, and re-run Step **1b** **in the same assistant turn chain** until:
+
+- required CI is **passing** or **pending** with no failures, or
+- a failure is **provably out of scope** for this PR (document one-line rationale + offer **`defer-ci`** modal only then), or
+- a hard blocker requires developer input (ambiguous product requirement, missing secret, policy).
+
+**Forbidden:** opening Step **4** disposition modal or **`coding-session`** post-create-pr / merge modals between pushes in a CI-only remediation loop when Checkpoint auto-advance applied. **Forbidden:** ending StreamFinal after the first partial push with "remaining failures deferred to Phase N" without running the loop above.
+
 **Next-step modal (binding):** After the report, when Checkpoint auto-advance does **not** apply, call **`mission_control_present_structured_choice`** (preferred on **`coding-session`** spawned lanes — MCP tool call, report recap in **`displayMarkdown`**) or the **AskQuestion** tool with the **contextual** Step **3b** option set from § *Build disposition options* below. The developer may review on GitHub or inspect local diffs **while the modal stays open**; they continue by **selecting an option**, not free-form chat.
 
 USER_CHECKPOINT — pick how to proceed with PR review dispositions on this lane.
@@ -375,11 +402,14 @@ After Step 3 classification, compute:
 
 1. Triage counts — one line or table: Must / Should / Rule-update required / Skipped (no follow-up) / Skipped → follow-up; when **`ciFailureCount > 0`**, add CI line: *N failing required check(s)* with names.
 2. **Omitted-options explainer** when any standard option is hidden — e.g. *"Apply Must / Apply Must + Should are not shown — 0 Must and 0 Should items on this PR."* or *"Skip / reject not shown — N failing required CI check(s) must be fixed or explicitly deferred."*
+3. **Merge paths (when PR open):** cross-ref [`.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc`](.sedea/centers/sedea/rules/6_git-commit-push-gate.mdc) § *PR approve-merge structured choice* and [rule **20**](../../../../rules/20_efficient-pr-shipping.mdc) § *PR approve-merge and merge inspect* — **`approve-merge-pr`** at **option index 1**, **`merged-pr-proceed`** at **option index 2** when both are listed; inspect-before-mutate applies after **`approve-merge-pr`** pick.
 
-**`askQuestion.options`** — include **only** applicable rows (always end with **`more-details`**):
+**`askQuestion.options`** — include **only** applicable rows. When **`prNumber`** or **`prUrl`** is known and agent merge is in scope, list **`approve-merge-pr`** then **`merged-pr-proceed`** before triage/review paths (rule **6** mergeability-first ordering). Always end with **`more-details`**:
 
 | Option id | Include when | Label (brief) |
 |-----------|--------------|---------------|
+| `approve-merge-pr` | **`prNumber`** or **`prUrl`** known, **`ciFailureCount === 0`** (open-PR triage; omit when required CI is failing — merge inspect will block; omit only when org policy forbids agent merge) | Approve and Merge PR — **Act** per § *Approve-merge act mapping* below |
+| `merged-pr-proceed` | **`prNumber`** or **`prUrl`** known (always during PR ship chain) | PR merged — proceed with cleanup — **Act** per § *Merged-forward act mapping* below |
 | `apply-must` | **`mustCount > 0`** | Apply Must fixes only |
 | `apply-must-should` | **`mustCount > 0` or `shouldCount > 0`** | Apply Must + Should fixes |
 | `fix-ci-only` | **`ciFailureCount > 0`** and **`mustCount === 0`** and **`shouldCount === 0`** | Fix failing CI only — investigate and patch in worktree |
@@ -388,12 +418,30 @@ After Step 3 classification, compute:
 | `skip-reject` | Triage non-empty and **`ciFailureCount === 0`** | When **`skippedOnly`**: *Skip / reject — reconcile on GitHub (recommended)*; else *Skip / reject selected comments* |
 | `defer-ci` | **`ciFailureCount > 0`** | Defer CI fixes — record failing checks in `remainingTasks`; do not set **`mergeDelegationReady`** |
 | `submit-manual-review` | **`skippedOnly`** or (**`followUpCount > 0`** and **`mustCount === 0`** and **`shouldCount === 0`** and **`ciFailureCount === 0`**) | Submit manual review on GitHub — open **`coding-session`** [Manual review submission (developer-input)](../coding-session/SKILL.md#manual-review-submission-developer-input) |
-| `merged-pr-proceed` | **`prNumber`** or **`prUrl`** known (always during PR ship chain) | PR merged — proceed with cleanup — **Act** per § *Merged-forward act mapping* below |
 | `more-details` | Always | More details for option _ |
+
+**Open-PR merge paths (binding):** Per rule **6** § *PR approve-merge structured choice* and rule **20** § *PR approve-merge and merge inspect*, when agent merge is in scope on a modal that includes both paths and **`ciFailureCount === 0`**, list **`approve-merge-pr`** (**Approve and Merge PR**) at **option index 1** and **`merged-pr-proceed`** at **option index 2** — **never** reverse. When **`ciFailureCount > 0`**, **omit `approve-merge-pr`** — list **`start-pr-review-delegate-merge`** (label **Fix CI failures in worktree — merge when checks pass**) before **`merged-pr-proceed`**. Triage and review-first paths follow as index **3+** unless counts hide them. **Forbidden:** listing **`merged-pr-proceed`** before **`approve-merge-pr`** when both are shown; omitting **`approve-merge-pr`** when agent merge is in scope **and** CI is green; offering **`approve-merge-pr`** while required CI is failing; label *Merge and Approve* or other orderings that invert approve-before-merge semantics.
 
 **Merged-forward (binding):** Include **`merged-pr-proceed`** on **every** disposition gate, post-fix commit/push gate, and developer-input resume modal while **`prNumber`** or **`prUrl`** is set — **even when** last `gh pr view` showed **`OPEN`**. **Forbidden:** omitting **`merged-pr-proceed`** because merge status was stale; using **`check-pr-status`** alone as the only way to discover developer merge on GitHub.
 
-**Act mapping:** selecting an option not shown in the modal is impossible; do not treat hidden options as implicit consent. When the developer picks **`fix-ci-only`** or **`apply-must-should`** with CI failures, investigate failing checks (`gh run view` / logs), patch in **`WORKTREE_ROOT`**, then open the commit/push gate — after push, re-run **Step 1b** before treating CI as cleared. When the developer picks **`defer-ci`**, set **`ciStatus: deferred`**, append each failing check to **`remainingTasks`**, and keep **`mergeDelegationReady: false`**. When the developer picks **`submit-manual-review`**, run **`coding-session`** [Manual review submission (developer-input)](../coding-session/SKILL.md#manual-review-submission-developer-input) — do not run Step **5 — GitHub only** on that turn. When the developer picks **`merged-pr-proceed`**, run § *Merged-forward act mapping* below.
+**Approval-gated agent merge (binding):** When a PR is open and **`ciFailureCount === 0`**, include option **`approve-merge-pr`** (*Approve and Merge PR*) on disposition, post-fix commit/push, and developer-input resume gates unless org policy forbids agent merge (omit with explicit recap note). When **`ciFailureCount > 0`**, **omit `approve-merge-pr`** — recap must state merge inspect will block while required CI is failing. **Act only** when the developer selects that option in the **same** turn: run rule **6** § *Merge inspect procedure* (`gh pr view` minimum fields) **before** any **`gh pr review --approve`** or **`gh pr merge`** — branch per § *Approve-merge act mapping* below; hand off to **`coding-session`** [Merge procedure](../coding-session/SKILL.md#merge-procedure) when inspect passes and preconditions are met. **Forbidden:** default-selecting that option; merging without that pick; inferring consent from silence or from commit/push picks; unconditional approve or merge when inspect shows merge-only is sufficient. When the developer does **not** pick **`approve-merge-pr`**, merge stays on GitHub; this lane verifies via **`merged-pr-proceed`**. See rule **6** § *Approval-gated agent approve+merge* and rule **20** § *PR approve-merge and merge inspect*.
+
+**Act mapping:** selecting an option not shown in the modal is impossible; do not treat hidden options as implicit consent. When the developer picks **`fix-ci-only`** or **`apply-must-should`** with CI failures, investigate failing checks (`gh run view` / logs), patch in **`WORKTREE_ROOT`**, then open the commit/push gate — after push, re-run **Step 1b** before treating CI as cleared. When the developer picks **`defer-ci`**, set **`ciStatus: deferred`**, append each failing check to **`remainingTasks`**, and keep **`mergeDelegationReady: false`**. When the developer picks **`submit-manual-review`**, run **`coding-session`** [Manual review submission (developer-input)](../coding-session/SKILL.md#manual-review-submission-developer-input) — do not run Step **5 — GitHub only** on that turn. When the developer picks **`approve-merge-pr`**, run § *Approve-merge act mapping* below. When the developer picks **`merged-pr-proceed`**, run § *Merged-forward act mapping* below.
+
+#### Approve-merge act mapping (binding)
+
+Run on the **developer's response turn** when they pick **`approve-merge-pr`**:
+
+1. **Inspect** — rule **6** § *Merge inspect procedure* (read-only, before any GitHub mutate):
+   ```bash
+   gh pr view <n> --json state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup,url
+   ```
+2. **Not mergeable** — when **`mergeable`** is not **`MERGEABLE`**, or **`mergeStateStatus`** / **`statusCheckRollup`** indicates blocked CI, conflicts, or pending required checks: **stop**; do **not** run **`gh pr review --approve`** or **`gh pr merge`**. One-line recap of blockers; re-open the same gate with **`approve-merge-pr`** and **`merged-pr-proceed`** still listed — or offer retry / check CI / defer via structured choice when blockers need a separate pick.
+3. **Mergeable — approval not required** — when inspect shows merge may proceed **without** a new approval from this actor (no blocking review requirement, no unresolved **`CHANGES_REQUESTED`**, branch policy allows merge without new **`gh pr review --approve`**): set **`outputs.mergeDelegationAuthorized: true`** on the invoker lane; run **`coding-session`** [Merge procedure](../coding-session/SKILL.md#merge-procedure) **`gh pr merge`** path only — **do not** run **`gh pr review --approve`** first per rule **6** § *Mergeable — approval not required*.
+4. **Mergeable — approval required** — when inspect shows approval is required before merge: set **`outputs.mergeDelegationAuthorized: true`**; run **`coding-session`** [Merge procedure](../coding-session/SKILL.md#merge-procedure) — **`gh pr review --approve`** then **`gh pr merge`** in the **same act turn** after inspect passes.
+5. **Preconditions not met** — when inline triage is incomplete (**`mergeDelegationReady: false`**, open Must fixes, **`githubReconciliationStatus: pending`**, or **`ciStatus: failing`** without prior **`defer-ci`**): recap blockers; do **not** merge — re-open disposition or **`coding-session`** [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) as appropriate.
+
+**Checkpoint auto-advance:** when Checkpoint trust auto-advances past a merge modal on the invoker lane, the **inspect procedure still runs** before any **`gh`** mutate — auto-advance waives the modal, not inspect.
 
 #### Merged-forward act mapping (binding)
 
@@ -401,20 +449,20 @@ Run on the **developer's response turn** when they pick **`merged-pr-proceed`**:
 
 1. **`gh pr view <n> --json state,mergedAt,mergeCommit,url`** — always refresh on pick; never trust stale session state.
 2. **If `state: merged`:** Set inline result fields `prState: merged`, `mergeSha`, `mergedAt`, `shipPhase: pr-merged`, `prReviewStatus: terminal`, `continuationStatus: terminal`. On **`coding-session`** invoker lanes, continue with [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) **`spawn-after-deploy-walk`** **Act** (post-merge cleanup → After deploy walk when applicable).
-3. **If `state: open`:** One line: *PR still open on GitHub — pick again after merge or choose another path.* Re-open the same gate **with `merged-pr-proceed` still listed**.
+3. **If `state: open`:** One line: *PR still open on GitHub — pick again after merge or choose another path.* Re-open the same gate **with `approve-merge-pr` and `merged-pr-proceed` still listed**.
 
-**Example fixtures** (illustrative `askQuestion.options` after counts):
+**Example fixtures** (illustrative `askQuestion.options` after counts — merge paths always **`approve-merge-pr`** then **`merged-pr-proceed`** when both listed):
 
 | Scenario | Typical options |
 |----------|-----------------|
-| Must present | `apply-must`, `apply-must-should`, `skip-reject`, `merged-pr-proceed`, `more-details` |
-| Rule-update only (0 Must / 0 Should / 0 follow-up) | `apply-rule-updates`, `skip-reject`, `submit-manual-review`, `merged-pr-proceed`, `more-details` |
-| Skip-only (0 Must / 0 Should / 0 rule-update / 0 follow-up) | `skip-reject` (recommended), `submit-manual-review`, `merged-pr-proceed`, `more-details` |
-| Follow-up only (0 Must / 0 Should / 0 rule-update) | `follow-ups-only`, `submit-manual-review`, `skip-reject`, `merged-pr-proceed`, `more-details` |
-| Mixed (Must + follow-up) | `apply-must`, `apply-must-should`, `follow-ups-only`, `skip-reject`, `merged-pr-proceed`, `more-details` |
-| Mixed (rule-update + code) | `apply-must`, `apply-must-should`, `apply-rule-updates`, `skip-reject`, `merged-pr-proceed`, `more-details` |
-| CI-only (0 Must / 0 Should / 0 rule-update / 0 follow-up, N failing checks) | `fix-ci-only`, `defer-ci`, `merged-pr-proceed`, `more-details` |
-| CI + Must | `apply-must`, `apply-must-should`, `fix-ci-only`, `defer-ci`, `merged-pr-proceed`, `more-details` |
+| Must present | `approve-merge-pr`, `merged-pr-proceed`, `apply-must`, `apply-must-should`, `skip-reject`, `more-details` |
+| Rule-update only (0 Must / 0 Should / 0 follow-up) | `approve-merge-pr`, `merged-pr-proceed`, `apply-rule-updates`, `skip-reject`, `submit-manual-review`, `more-details` |
+| Skip-only (0 Must / 0 Should / 0 rule-update / 0 follow-up) | `approve-merge-pr`, `merged-pr-proceed`, `skip-reject` (recommended), `submit-manual-review`, `more-details` |
+| Follow-up only (0 Must / 0 Should / 0 rule-update) | `approve-merge-pr`, `merged-pr-proceed`, `follow-ups-only`, `submit-manual-review`, `skip-reject`, `more-details` |
+| Mixed (Must + follow-up) | `approve-merge-pr`, `merged-pr-proceed`, `apply-must`, `apply-must-should`, `follow-ups-only`, `skip-reject`, `more-details` |
+| Mixed (rule-update + code) | `approve-merge-pr`, `merged-pr-proceed`, `apply-must`, `apply-must-should`, `apply-rule-updates`, `skip-reject`, `more-details` |
+| CI-only (0 Must / 0 Should / 0 rule-update / 0 follow-up, N failing checks) | `merged-pr-proceed`, `fix-ci-only`, `defer-ci`, `more-details` |
+| CI + Must | `approve-merge-pr`, `merged-pr-proceed`, `apply-must`, `apply-must-should`, `fix-ci-only`, `defer-ci`, `more-details` |
 
 **Forbidden:** “Review the PR and tell me when to continue”, “wait for the user to review”, fixed five-option menus when counts make options inert, or ending the turn without structured choice when dispositions need approval **and** Checkpoint auto-advance does not apply.
 
@@ -427,19 +475,20 @@ When the developer picks **`apply-rule-updates`**, run **`coding-session`** [Pos
 
 ### Post-fix commit/push gate (binding)
 
-When the disposition pick authorizes source edits and fixes are ready to land, use structured choice **before** `git commit` or `git push` — even when **`coding-session`** already authorized push at ship cut-point. Under Checkpoint trust, this gate is **developer-input** — not happy-path auto-advance.
+When the disposition pick authorizes source edits and fixes are ready to land, use structured choice **before** `git commit` or `git push` — even when **`coding-session`** already authorized push at ship cut-point. Under Checkpoint trust, this gate is **developer-input** — not happy-path auto-advance. Include **`approve-merge-pr`** then **`merged-pr-proceed`** when PR is open (rule **6** / rule **20** ordering — see § *Build disposition options*).
 
-Put the session orientation table, disposition summary, and `git status --short` in **`display.markdown`**.
+Put the session orientation table, disposition summary, and `git status --short` in **`displayMarkdown`**. Cross-ref rule **6** § *Merge inspect procedure* and rule **20** § *PR approve-merge and merge inspect* in recap when merge paths are listed.
 
 USER_CHECKPOINT — authorize commit and push for approved PR review fixes on this lane.
 
 | Option id | Label (brief) | Act |
 |-----------|---------------|-----|
+| `approve-merge-pr` | Approve and Merge PR | § *Approve-merge act mapping* — rule **6** inspect before mutate |
+| `merged-pr-proceed` | PR merged — proceed with cleanup | § *Merged-forward act mapping* |
 | `commit-and-push` | Commit and push — run Step 5 same turn | **`git commit`** + **`git push`** per rule **6**; **same turn** run Step **5 — GitHub only**; re-run **Step 1b** before declaring CI cleared |
 | `commit-only` | Commit only — defer push | **`git commit`**; open push gate on next turn or defer via **`coding-session`** |
 | `revise-dispositions` | Revise dispositions or fixes | Re-open [Disposition gate](#step-4--report-and-disposition-gate) |
 | `defer-pr-review` | Defer — stay on pr-review | `continuationStatus: "active"`; no commit/push |
-| `merged-pr-proceed` | PR merged — proceed with cleanup | § *Merged-forward act mapping* |
 | `more-details` | More details for option _ | Elaborate; re-open this gate |
 
 - **`defaultOptionId: commit-and-push`** when fixes are complete and CI re-check is not pending.
@@ -455,7 +504,7 @@ If all comments were **Skipped (no follow-up)** with **no** code edits **and** *
 
 - **Skipped-only triage** — Step 3 marked every comment **Skipped (no follow-up)** with **no** code edits: run **GitHub only** immediately (no commit/push).
 
-**GitHub only** (two-step `PR_REVIEW_INPUT` + `node .sedea/centers/sedea/scripts/pr-review.mjs` per § *Input file and script* — never chain write + script):
+**GitHub only** (two-step `PR_REVIEW_INPUT` + `.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/sedea/scripts/pr-review.mjs` per § *Input file and script* — never chain write + script):
 
 1. **Reply + resolve** each inline thread using approved dispositions from Step 4 — **Must fix**, **Should fix**, **Skipped (no follow-up)**, or **Skipped → follow-up** (same paraphrase + `(target: …)` as Step 3a) plus short reasoning, then resolve the thread.
 

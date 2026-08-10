@@ -43,7 +43,10 @@ inputs:
     default: []
   diffSummary:
     type: object
-    description: Optional summary from coding-session, including commits, files, and line counts.
+    description: >-
+      Optional summary from coding-session. Must be a JSON object (not a string).
+      Expected keys when present: commitCount, fileCount, insertions, deletions,
+      head and/or subject; optional files (string array of paths).
     required: false
   ledgerParent:
     type: string
@@ -80,11 +83,11 @@ If Mission Control opened a session whose only intent is **`pre-pr-review`** / p
 
 Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up* / *Warm-up cap exceptions*. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table. **384 KiB cap:** frontmatter omits **`plan.mdc`** and **`development-process.md`** — Step 3 reads **`development-process.md`**; Step 4 loads **`inputs.targetPlanPath`** (PR plan, not Squad Leader **`plan.mdc`**). **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
@@ -123,6 +126,7 @@ This pass complements, and does not replace, the later GitHub-surface **reviewer
 - Run **`../README.md`** § *MCP spawn preflight* (rows M1–M8) before every MCP spawn; **forbidden** host-resolved identity keys in MCP args (`correlationId`, `dispatchId`, `slotId`, … — see README § *Host-resolved identity*).
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
 
+**Spawn-only lane (binding):** **`pre-pr-review`** runs on a **fresh spawned child lane** from parent **`coding-session`** only — **forbidden** inline on the coding lane. Parent **`coding-session`** owns spawn turn sequencing, Yield / #external-wait resume, and external-wait gates per [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc) § *Spawn-ack semantics (binding)* and **`coding-session/SKILL.md`** § *Pre-PR spawn turn sequencing* — cross-reference only; do **not** duplicate the full block here.
 
 ## Structured choice (Mission Control)
 
@@ -132,7 +136,9 @@ This skill does not own approval modals — **`coding-session`** collects develo
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`pre-pr-review`**; invoker missions **`plan-and-deliver`**, **`single-phase`**, **`quick-fix`**, and **`debug-and-fix`** document their own **`coding-session`** ship gates — see **`coding-session/SKILL.md`** § *Checkpoint turn UX* for Review feedback approval and Create-PR handoff.
 
-**Real-dispatch test loop (binding):** After merge, run one full **`pre-pr-review`** spawn on a Checkpoint dispatch through Step **8** — verify Steps **1–7** auto-advance and Step **8** **always** auto-emits terminal + parent refocus (including **`no-go`**) without a modal; the **`coding-session`** parent receives the bubble-up and owns next-step gates before the parent phase advances the next ship-chain skill PR — per **Phase 2 — R&D center audit** § *Single-concern strategy*.
+**Parent yield gate:** After parent **`coding-session`** emits **`mission_control_spawn_agent`** for this lane (spawn-only turn per rule **4** § *Spawn-ack semantics (binding)* — cross-reference only), the parent must close the **next** turn with a next-step resume modal per **`coding-session/SKILL.md`** § [Yield gate (Checkpoint — binding)](../coding-session/SKILL.md#yield-gate-checkpoint--binding). **Forbidden:** batching spawn with that modal on the same turn. This skill’s Step **8** auto-emit does **not** waive the parent Yield obligation.
+
+**Real-dispatch test loop (binding):** After merge, run one full **`pre-pr-review`** spawn on a Checkpoint dispatch through Step **8** — verify Steps **1–7** auto-advance and Step **8** **always** auto-emits terminal + parent refocus (including **`no-go`**) without a modal; the **`coding-session`** parent receives the bubble-up and owns next-step gates before the parent phase advances the next ship-chain skill PR — per **Phase 2 — Software Development center audit** § *Single-concern strategy*.
 
 Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md).
 
@@ -245,6 +251,18 @@ If `git status --short` is non-empty, continue against the committed diff but ev
 If there are zero commits ahead and no diff, stop with `failure`: there is nothing to review.
 
 - **Next-step resolution:** Auto-advance to Step **6** when a committed diff exists — no `USER_CHECKPOINT` on this step.
+
+### Gitlink-only diff recap (binding)
+
+When `git diff <baseRef>...HEAD` under the review worktree is **only** submodule gitlink pointer changes — or substantive edits live in a linked center / product / center-content repo — the review artifact is the **source repo**, not hosting gitlink stat lines.
+
+| Rule | Requirement |
+|------|-------------|
+| **Handback** | Terminal `codingAgentHandback` and parent-facing recap must name the **source repo**, branch/SHA when known, and changed paths — not treat gitlink-only diff as the content to review |
+| **Before `go`** | When the downstream hosting PR would be gitlink-only, include source-repo file summary in `codingAgentHandback` so **`coding-session`** [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) can lead with it |
+| **Forbidden** | Hosting PR link as primary recap; achievement-style orientation tables; asking the developer to review gitlink pointer deltas as substantive content |
+
+Resolve affected submodule role(s) per [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Three-repo submodule taxonomy*.
 
 ## Pre-PR phase boundary (plan anchor)
 

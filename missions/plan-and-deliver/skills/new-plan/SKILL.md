@@ -5,7 +5,8 @@ description: >-
  (`.sedea/operations/.../plans/` via explicit handover paths — not user-id path construction),
  with required frontmatter (name, overview, todos, isProject) and `parent` only in the sidecar. Resolves
  parent per planning-target-resolution; confirms parent before write except on
- indexed child spawn when parent + index N are already locked by session context.
+ indexed child spawn when parent + index N are already locked by session context,
+ or when `upstreamSkill` is `debug-and-fix` (standalone root `parent: null` pre-locked).
  After an indexed handoff, may run **pr-plan** inline or spawn **phase-planner**. When run inline from
  **delivery-phases** or **pr-breakdown** under **master-planner**, reports Completion (inline) to the invoker.
  When spawned from an upstream decomposition agent that already approved the parent list, skips the child-stub populator approval
@@ -13,7 +14,7 @@ description: >-
  when the developer asks to scaffold a plan via **new-plan** (standalone) or expand
  a parent list item **N** (indexed-child) from a numbered dual-title list.
 designation:
-  allowed: Ignite plan stubs from parent decomposition; Plan Board sidecar rows
+  allowed: Ignite plan stubs from parent decomposition; operations plan sidecar rows
   forbidden: Application implementation; worktree ship; inline product code edits
 inputs:
   mode:
@@ -63,9 +64,7 @@ laneRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/new-plan/SKILL.md"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc"
 ---
 
@@ -77,22 +76,22 @@ Scaffold a standalone `.plan.md` and `.state.yaml` under the **dispatch-scoped p
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Often runs **inline** on invoker lane; manifest applies at spawn and warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Often runs **inline** on invoker lane; manifest applies at spawn and warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **384 KiB cap:** frontmatter omits **`plan.mdc`**, **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader ledger, spawn/wait |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | NFD process templates |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Slim spawn contracts, terminal stop |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Target resolution, depth-first gates |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `plan.mdc`, `development-process.md` — load at named protocol steps. **`planning-mode-templates.md`** is intentionally omitted on the indexed-child stub path — inline **`pr-plan`** owns template **`Read`** when populating from Planning Modes templates.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -101,7 +100,7 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice, AskQuestion |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Planning target resolution (role minimum) |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/new-plan/SKILL.md` | This skill procedure |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight, definitive `laneRules` |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight M1–M9, definitive `laneRules` |
 
 ## Agent messaging (MCP)
 
@@ -116,6 +115,7 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 
 - Run **`../README.md`** § *MCP spawn preflight* (rows M1–M8) before every MCP spawn; **forbidden** host-resolved identity keys in MCP args (`correlationId`, `dispatchId`, `slotId`, … — see README § *Host-resolved identity*).
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
+- **Relevant Links (post-write):** After scaffolding or materially editing `.plan.md` / `.state.yaml` under the plans union, call MCP **`mission_control_update_relevant_documents`** with the absolute plan path (`kind: plan`) — same turn preferred. **Skip** read-only loads and unchanged already-registered paths. Does **not** replace terminal `planPath` / `planSlug` outputs. See **`../README.md`** § *Relevant Links — post-write registration*.
 
 
 ## Triggers
@@ -130,6 +130,11 @@ The **developer** selects continuation per **30_planning-target-resolution** § 
 
 ## Checkpoint turn UX (skill-local)
 
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
+
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`new-plan`**; invoker skills **`master-planner`**, **`delivery-phases`**, **`pr-breakdown`**, and **`quick-fix-plan`** document upstream decomposition gates — see those skills' § *Checkpoint turn UX* and **`quick-fix/plan.mdc`** §4 inline chain.
 
 **Real-dispatch test loop (binding):** After merge, run one full **`new-plan`** spawn on a Checkpoint dispatch through Step **3** and collect a developer verdict before the parent phase advances the next **`new-plan`** step PR — per **Planning protocol skills UX** § *Single-concern strategy*.
@@ -139,7 +144,7 @@ Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.s
 | Step | Checkpoint behavior | Gate |
 |------|---------------------|------|
 | **Indexed child validation** (1–4) | Auto-advance on spawned handoff with locked `inputs` | exception: depth-first block / row problems |
-| **Parent derivation** (standalone) | Auto-advance when parent locked | **Gate** when parent unresolved |
+| **Parent derivation** (standalone) | Auto-advance when parent locked (incl. `debug-and-fix` null root) | **Gate** when parent unresolved |
 | **Write stub + sidecar** | Auto-advance | — |
 | **After write 1–2** — parent `Plan:` link + child link | Auto-advance on happy path | open items per modal contract |
 | **Auto-authorize populator** | Auto-advance (skip step 3) when upstream `delivery-phases` / `pr-breakdown` | — |
@@ -160,7 +165,7 @@ Under Checkpoint trust, **happy-path** stub write, parent `Plan:` link verificat
 
 ### Parent derivation confirmation gate (binding)
 
-When **Parent derivation** runs on standalone / non-indexed path and parent is resolved but not yet confirmed (indexed-child spawn skips this gate):
+When **Parent derivation** runs on standalone / non-indexed path and parent is resolved but not yet confirmed (indexed-child spawn and **debug-and-fix null-root lock** skip this gate):
 
 USER_CHECKPOINT — confirm parent slug or root delivery plan before writing stub files.
 
@@ -175,6 +180,7 @@ USER_CHECKPOINT — confirm parent slug or root delivery plan before writing stu
 - Apply **Parent derivation — Open-item modal contract** when multiple parent candidates remain — this confirmation question stays **last** in `questions[]`.
 - **`defaultOptionId: confirm-parent`** when a single candidate is locked and no blocking open items remain.
 - **Next-step resolution:** Auto-advance to stub write when parent is pre-locked by indexed-child spawn — no `USER_CHECKPOINT` on that path.
+- **Skip (debug-and-fix null root — binding):** When spawn **`inputs.upstreamSkill`** is **`debug-and-fix`** (or **`initiatingPrompt`** / handover explicitly pre-locks root **`parent: null`** for code-promotion standalone), set sidecar **`parent: null`**, acknowledge in one line — `Parent: null (root delivery plan — locked by debug-and-fix)` — and **auto-advance** to stub write. **Forbidden:** treating that null as an error or missing parent; opening this confirmation gate (`confirm-parent` / `use-null-root`) for that spawn.
 
 ### Phase-planner spawn external-wait (binding)
 
@@ -225,7 +231,16 @@ When `requestedPopulatorSkill` is **`pr-plan`**, run that skill **inline on this
 | `parentRowSingleConcern` | From **`pr-breakdown`** inline handoff when present — PR description seed for item **N** |
 | `skipPrPlanHandoffModal` | `true` when `autoChainFirstPr: true` from **`pr-breakdown`** **`approve-list`** auto-expand; otherwise omit or `false` |
 
-When `requestedPopulatorSkill` is **`phase-planner`**, emit **`mission_control_spawn_agent`** per step **4** (spawned populator lane — unchanged).
+When `requestedPopulatorSkill` is **`phase-planner`**, run § *Populator registry lookup — phase-planner* before step **4** spawn. When lookup finds an existing slug → **`mission_control_notify_child_lanes`** per **`../README.md`** § *Spawn vs notify* and report **`## Completion (inline)`** to invoker — **forbidden** duplicate spawn. When no slug → emit **`mission_control_spawn_agent`** per step **4**.
+
+### Populator registry lookup — phase-planner (binding)
+
+Before **`mission_control_spawn_agent`** for **`phase-planner`** on indexed-child path:
+
+1. Resolve **`targetPlanPath`** from the child stub (existing link on parent row **N** or path about to be written).
+2. Look up prior **`phase-planner`** slug from **`activeLanes`**, invoker **`spawnedPlans`**, or lane registry by **`targetPlanPath`** + **`parentIndex`**.
+3. **Match found (active or terminal):** notify that slug; skip spawn; return **`populatorHandoff: notify-existing-phase-planner`** in **`## Completion (inline)`**.
+4. **No match:** proceed with step **4** spawn unchanged.
 
 When **`parentAgentRole`** is **`delivery-phases-agent`** or **`pr-breakdown-agent`** (this skill run **inline** from decomposition under **`master-planner`**), report **`## Completion (inline)`** to the invoker — do **not** emit **`mission_control_send_agent_result`**.
 
@@ -248,7 +263,7 @@ The regular parent-confirmation gate below is **skipped** when that pre-resoluti
  - `Delivery phases` parent heading requires `childKind: "phase-planner"` and `requestedPopulatorSkill: "phase-planner"` when a populator is requested.
  - `PR breakdown` parent heading requires `childKind: "pr-plan"` and `requestedPopulatorSkill: "pr-plan"` when a populator is requested.
  - If the requested kind conflicts with the parent heading, stop with `failure`; do not create a child file.
-3. **Capture the exact `Plan:` placeholder for item N.** The selected row must contain exactly one `Plan:` line that is still pending. Accept `_TBD`, `_TBD_`, or a clear spawn-hint placeholder after `Plan:`. If the row has no `Plan:` line, has multiple `Plan:` lines, or already links a `.plan.md`, stop with `partial` and report the row problem; do not create a duplicate child.
+3. **Capture the exact `Plan:` line for item N.** The selected row must contain exactly one `Plan:` line. Accept `_TBD`, `_TBD_`, or a clear spawn-hint placeholder after `Plan:` for **new** stubs. When the row **already links** a `.plan.md`, **do not** create a duplicate child — run § *Populator registry lookup — phase-planner* (or equivalent for **`pr-plan`**) and notify the existing populator lane per rule **4** § *Spawn vs notify*; return **`partial`** only when lookup cannot resolve a slug and the parent link is untrusted. If the row has no `Plan:` line or has multiple `Plan:` lines, stop with `partial` and report the row problem.
 4. **Capture parent row prose for the child stub.** When item **N** includes sub-bullets per the dev-process **§ 6 / § 5 contents rule** (decomposition decision, scope sentence, `Plan:`), treat that text as **already reviewed on the parent** — copy the scope sentence (and optional decomposition line) into the child `overview:` and `## Overview` when writing the stub. Do **not** ask the developer to re-approve that prose.
 
 ### Indexed child — Open-item modal contract
@@ -286,8 +301,9 @@ Everything else (slug shape, frontmatter, sidecar, after-write steps, scope guar
 
 ## Parent derivation (context-aware)
 
-A plan without a parent is a **root delivery plan** (`parent: null` in the sidecar) — files always live in the flat `plans/` directory for the active dispatch scope. There is **no** `roadmap-topics/` subtree for new plans. Resolve a candidate in this order (align with **planning-target-resolution**; highest confidence first), then confirm before writing (unless **Indexed child spawn** already skipped the gate):
+A plan without a parent is a **root delivery plan** (`parent: null` in the sidecar) — files always live in the flat `plans/` directory for the active dispatch scope. There is **no** `roadmap-topics/` subtree for new plans. Resolve a candidate in this order (align with **planning-target-resolution**; highest confidence first), then confirm before writing (unless **Indexed child spawn** or **debug-and-fix null-root lock** already skipped the gate):
 
+0. **Pre-locked null root (`upstreamSkill: debug-and-fix`)** — when spawn **`inputs.upstreamSkill`** is **`debug-and-fix`**, or handover / **`initiatingPrompt`** states null parent is expected and approved for standalone code-promotion: lock **`parent: null`**, acknowledge once, **skip confirmation**, continue to stub write. Do **not** fall through to steps 1–4 as if parent were missing.
 1. **Explicit in session or message** — slug, path under `plans/`, or absolute `.sedea/operations/.../*.plan.md`.
 2. **Session anchor** — from hosting repo root:
 
@@ -301,7 +317,7 @@ A plan without a parent is a **root delivery plan** (`parent: null` in the sidec
 
 Lock the parent using the bullets above; **planning-target-resolution** is normative for combining signals.
 
-**Confirm** before writing on this path (unless **Indexed child spawn** already skipped the gate). Wrong parent is the expensive failure mode.
+**Confirm** before writing on this path (unless **Indexed child spawn** or **debug-and-fix null-root lock** already skipped the gate). Wrong parent is the expensive failure mode.
 
 ### Parent derivation — Open-item modal contract
 
@@ -380,7 +396,7 @@ isProject: false
 ### 2. `<slug>.state.yaml`
 
 ```yaml
-# Sidecar for Plan Board (runtime). Plan: <slug>.plan.md
+# Sidecar for operations plan runtime. Plan: <slug>.plan.md
 parent: <resolved-parent-slug-or-null>
 worktrees: []
 prs: []
@@ -400,7 +416,7 @@ Always write the sidecar. `parent:` required; use YAML `null` unquoted for a **r
 
  If verification fails, surface blocked parent-link issues as open items per **Indexed child — Open-item modal contract** before returning `partial`; include `plan-reconcile` in `remainingTasks` when the developer defers repair. Do not proceed to the populator spawn until the parent link is trustworthy or the developer explicitly accepts blocked state with documented defer.
 
-2. **Link the child** using an absolute `file://` URL to the real path under `.sedea/operations/.../plans/...` so the developer can open it.
+2. **Link the child** in developer-facing recap using a backtick path to the real `.plan.md` (prefer the hosting-absolute path; a `.sedea/operations/…/plans/…` path is also valid). Do **not** use a `file://` Markdown link or put backticks inside a Markdown link label.
 
 - **Next-step resolution:** Auto-advance to [Auto-authorize populator](#auto-authorize-populator-upstream-decomposition-spawn) or Step **3** populator approval after steps **1–2** verify — no `USER_CHECKPOINT` on stub write or parent `Plan:` link when auto-authorize applies.
 
@@ -482,7 +498,7 @@ USER_CHECKPOINT — approve child stub and populator handoff before inline pr-pl
  2. Merge child `activeLanes`, `openLedgerEntries`, and `remainingTasks` into this skill’s ledger.
  3. Continue inline **`pr-plan`** §5e semantics on this lane (summarize for the developer; re-offer handoff when appropriate).
  4. When child **`outputs.prShipComplete`** is **`true`**: set **`outputs.prShipComplete: true`**, echo **`parentPlanPath`**, **`parentPlanSlug`**, **`parentIndex`** from this skill’s indexed spawn **`inputs`** (and child when present); merge **`shipPhase`**, **`rowStatus`**, **`mainPullStatus`**, **`archivedSlugs`**. Report these in **`## Completion (inline)`** to the invoker (**`pr-breakdown`** / **`phase-planner`** / standalone **`new-plan`** parent).
- 4a. When child **`outputs.parentPlanningFollowUpNotification`** is **`"sent"`**: merge **`parentPlanningFollowUps`** into **`outputs`**; propagate in **`## Completion (inline)`** or re-emit so **`pr-breakdown`** / **`phase-planner`** / **`master-planner`** can append to parent plan **`## Follow-ups`** per **`../README.md`** § *Upstream parent follow-up notification*.
+ 4a. When child **`outputs.parentPlanningFollowUpNotification`** is **`"sent"`**: merge **`parentPlanningFollowUps`** into **`outputs`**; propagate in **`## Completion (inline)`** or re-emit so **`pr-breakdown`** / **`phase-planner`** / **`master-planner`** can append to parent plan **`## Follow-ups`** per `docs/spawn-ship-contracts.md` § *Upstream parent follow-up notification*.
  5. **Re-emit / propagate:** **Inline** under **`pr-breakdown`** or **`phase-planner`**: return **`## Completion (inline)`** with ship fields so the decomposition skill marks **`childRows[N].status: ship-complete`** and may offer **`expand-eligible`** on the next turn. **Standalone spawned `new-plan`:** re-emit **`mission_control_send_agent_result`** (same **`correlationId`**) with merged **`outputs`** before stopping.
  6. Return `partial` or `active` while the child lane is open; `terminal` only when inline **`pr-plan`** handoff is complete and no **`coding-session`** child remains open — **`prShipComplete`** may still leave the invoker **`active`** until upstream expand runs.
 
@@ -508,6 +524,19 @@ This skill writes `.plan.md` + `.state.yaml`, optionally updates one `Plan:` lin
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below (spawned standalone only); **forbidden** while **`continuationStatus: active`** |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| Inline under **`delivery-phases`** / **`pr-breakdown`** | **N/A** — use **`## Completion (inline)`**; no refocus |
+| **`continuationStatus: active`**; open **`phase-planner`** / **`coding-session`**; pending populator | **Forbidden** |
+| **`continuationStatus: terminal`** on a **spawned** standalone run | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "new-plan-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 

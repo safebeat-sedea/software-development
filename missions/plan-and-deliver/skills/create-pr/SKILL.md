@@ -90,6 +90,8 @@ Gates use **AskQuestion**, **`mission_control_present_structured_choice`** per *
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`create-pr`**; other ship-chain skills document their own markers.
 
+**Parent yield gate:** Mid-ship StreamFinal without same-turn Act on the invoker **`coding-session`** lane is governed by **`coding-session/SKILL.md`** § [Yield gate (Checkpoint — binding)](../coding-session/SKILL.md#yield-gate-checkpoint--binding). This skill must **not** authorize recap-only “Act next turn” exits that leave the parent without a resume modal.
+
 **Real-dispatch test loop (binding):** After merge, run one full inline **`create-pr`** on a **`coding-session`** Checkpoint dispatch through [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) (clean path) or [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) (exception), then verify **`coding-session`** [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) opens same turn without idle-handoff prose — collect a developer verdict before the parent phase advances **`pr-review`** PR 5 — per **Ship-chain skills UX** § *Single-concern strategy*.
 
 Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md).
@@ -225,6 +227,28 @@ When pre-PR validation and push preconditions pass:
 - **Non-Checkpoint or exception** — open [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) before **`gh pr create`**. When the developer authorizes creation, run `gh pr create` on the **response turn** — not the same turn as the modal.
 
 If creation is not authorized, produce the PR prompt below and set `continuationStatus: "active"` — do not call `gh pr create`.
+
+## `gh pr create` procedure (binding)
+
+When authorized to open the PR ([Gate](#gate), [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding), or [Pre-gh authorization gate](#pre-gh-authorization-gate-binding)):
+
+1. **Derive PR base branch** — From inline **`baseRef`** (e.g. `origin/main`): strip a leading `origin/` prefix → **`<prBaseBranch>`** (e.g. `main`). When **`baseRef`** uses another remote prefix, strip that remote name and `/` only.
+2. **Pre-create self-check** — `gh api repos/{owner}/{repo} --jq .default_branch`. When the result ≠ **`<prBaseBranch>`**, **`--base` is mandatory** (always safe to pass even when equal).
+3. **Create PR** — From **`worktreePath`**:
+
+```bash
+gh pr create \
+  --base "<prBaseBranch>" \
+  --head "<worktreeName>" \
+  --title "<title>" \
+  --body "<body>"
+```
+
+Body per rule **20** § *Comprehensive PR descriptions*.
+
+4. **Forbidden:** bare **`gh pr create`** without **`--base`** — GitHub repository **`default_branch`** may differ on fork layouts.
+
+Cross-ref: rule **20** § *Hosting-repo PR base branch (binding)*. **Center-repo PRs:** [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Center-repo worktree procedure*; **`development-process.md`** § *Center-repo PR base (binding)*.
 
 ## PR prompt fallback
 

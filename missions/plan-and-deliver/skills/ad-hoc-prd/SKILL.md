@@ -45,7 +45,6 @@ laneRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/10_plan-naming-convention.mdc"
 ---
 
@@ -53,15 +52,15 @@ warmUpRules:
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Spawned from **`single-phase`** §3 or **`debug-and-fix`** §5c — **not** plan-and-deliver §3 (which uses **`author-prd`**). Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table. **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Spawned from **`single-phase`** §3 or **`debug-and-fix`** §5c — **not** plan-and-deliver §3 (which uses **`author-prd`**). Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. Frontmatter matches this table. **384 KiB cap:** frontmatter omits **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
 **Invoker `warmUpRules` override (binding):** On **`mission_control_spawn_agent`**, invokers merge skill frontmatter **`warmUpRules`** but **must add** the **invoking mission `plan.mdc`** — **`.sedea/centers/research-and-development/missions/single-phase/plan.mdc`** (§§1–3) or **`.sedea/centers/research-and-development/missions/debug-and-fix/plan.mdc`** (post-fix step **5c**) — **instead of** `plan-and-deliver/plan.mdc`. See **`../README.md`** § *Definitive `laneRules`* and each mission's spawn step.
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
@@ -69,8 +68,9 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 |------|---------|
 | *(invoker-supplied on spawn)* **Invoking mission `plan.mdc`** — **`single-phase/plan.mdc`** (§§1–3) or **`debug-and-fix/plan.mdc`** (§5c) | Mission protocol for this spawn — **not** `plan-and-deliver/plan.mdc` |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | Ad-hoc vs Master Plan routing |
 | `.sedea/centers/research-and-development/rules/10_plan-naming-convention.mdc` | Ad-hoc PRD filename slug |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `development-process.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -163,6 +163,11 @@ See [`.sedea/centers/research-and-development/rules/50_mission-control-display-m
 
 ## Checkpoint turn UX (skill-local)
 
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
+
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`ad-hoc-prd`**; invoker missions **`single-phase`** and **`debug-and-fix`** document their own Squad Leader gates — see **`single-phase/plan.mdc`** §3 / §2 and **`debug-and-fix/plan.mdc`** §5c for spawn and leader-lane resume tables.
 
 **Real-dispatch test loop (binding):** After merge, run one full **`ad-hoc-prd`** spawn on a Checkpoint dispatch through step **5** PRD approval and collect a developer verdict before the parent phase advances the next cross-mission skill PR — per **Planning protocol skills UX** § *Single-concern strategy*.
@@ -215,9 +220,11 @@ USER_CHECKPOINT — provide missing ad-hoc PRD inputs on this lane.
  - **`Master Plan:`** line — `_TBD_` plus one sentence that **`master-planner`** will create the `.plan.md` from this Ad-Hoc PRD and the developer should paste or link that path here when it exists (do **not** invent a plan path).
  - **`## 1–3`** sections filled from handoff details; `_TBD_` where unavoidable + say what is missing.
 
+   - **Relevant Links (post-write):** After a successful create or material revise write, call MCP **`mission_control_update_relevant_documents`** with the absolute Ad-Hoc PRD path (`kind: prd`) on this lane — same turn preferred. **Skip** when already registered this session with no content change. Does **not** replace terminal `prdPath` / `prdRef`. See **`../README.md`** § *Relevant Links — post-write registration*.
+
    - **Next-step resolution:** Auto-advance to step **5** after successful write — emit non-terminal **`mission_control_send_agent_result`** with `developerApprovedPrd: false` when the invoker protocol requires leader ack before step **5**; do **not** treat that ack as PRD approval.
 
-5. **Present for approval** — Recap the new file (workspace / `file://` link, one-line summary of §§1–3). Use **AskQuestion**, **`mission_control_present_structured_choice`** per **`../README.md`** § *Recap, structured choice, act* and **`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`**.
+5. **Present for approval** — Recap the new file with a backtick path (prefer the hosting-absolute path; a `.sedea/operations/…/docs/…` path is also valid) and a one-line summary of §§1–3. Do **not** use a `file://` Markdown link or put backticks inside a Markdown link label. Use **AskQuestion**, **`mission_control_present_structured_choice`** per **`../README.md`** § *Recap, structured choice, act* and **`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`**.
 
 USER_CHECKPOINT — approve, revise, or resolve open items on this Ad-Hoc PRD before invoker downstream steps.
 
@@ -251,6 +258,8 @@ USER_CHECKPOINT — approve, revise, or resolve open items on this Ad-Hoc PRD be
 
 ## Completion (spawned)
 
+**Spawn-ack (invoker context — binding):** Invokers (**`single-phase`** §3, **`debug-and-fix`** §5c) emit **`mission_control_spawn_agent`** for this lane on a **spawn-only turn** per [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc) § *Spawn-ack semantics (binding)* — ack ≠ host spawn success; **forbidden** parallel spawn + wait modal on that turn. Cross-reference only; do **not** duplicate the full block here. This child lane owns PRD approval gates and terminal **`mission_control_send_agent_result`** — not invoker external-wait narration from **`transcriptOnly`** ack alone.
+
 ### MCP result preflight (`mission_control_send_agent_result`)
 
 | Step | Check |
@@ -259,6 +268,20 @@ USER_CHECKPOINT — approve, revise, or resolve open items on this Ad-Hoc PRD be
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below; **forbidden** while **`continuationStatus: active`** |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| **`continuationStatus: active`** (approval pending; post-write ack) | **Forbidden** |
+| **`continuationStatus: terminal`** (**Approve PRD** or abandon) | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "ad-hoc-prd-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Forbidden:** structured-choice options whose primary purpose is parent-switch — use **`mission_control_refocus_parent_lane`** instead.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 

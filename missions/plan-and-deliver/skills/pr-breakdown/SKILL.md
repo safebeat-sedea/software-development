@@ -56,9 +56,7 @@ laneRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/pr-breakdown/SKILL.md"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc"
 ---
 
@@ -70,22 +68,22 @@ The procedure below is a hard contract — do **not** skip steps, re-order them,
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Often runs **inline** on invoker lane; manifest applies at spawn and warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Often runs **inline** on invoker lane; manifest applies at spawn and warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **384 KiB cap:** frontmatter omits **`plan.mdc`**, **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader ledger, spawn/wait |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | NFD process templates |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Slim spawn contracts, terminal stop |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Target resolution, depth-first gates |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `plan.mdc`, `development-process.md`, `planning-mode-templates.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -94,7 +92,7 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice, AskQuestion |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Planning target resolution (role minimum) |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/pr-breakdown/SKILL.md` | This skill procedure |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight, definitive `laneRules` |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight M1–M9, definitive `laneRules` |
 
 ## Agent messaging (MCP)
 
@@ -109,18 +107,19 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 **Binding:**
 
 - Run **`../README.md`** § *MCP spawn preflight* (rows M1–M8) before every MCP spawn; **forbidden** host-resolved identity keys in MCP args (`correlationId`, `dispatchId`, `slotId`, … — see README § *Host-resolved identity*).
-- Run **`../README.md`** § *MCP notify preflight* (rows N1–N8) before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+- `Read` **`docs/spawn-ship-contracts.md`** § *MCP notify preflight* (rows N1–N8) — then run notify preflight before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
+- **Relevant Links (post-write):** After each Write/StrReplace that **materially edits** the target plan’s dual-title / **`### PR list`** (or assessment) block, call MCP **`mission_control_update_relevant_documents`** with the absolute plan path (`kind: plan`) — same turn preferred. **Skip** read-only loads and unchanged already-registered paths. See **`../README.md`** § *Relevant Links — post-write registration*.
 
 ### Plan-change notify — emit-when (`mission_control_notify_child_lanes`)
 
-After a **material** decomposition or **`### PR list`** change on the target plan that affects **ongoing work** on named **non-terminal** child row owners, notify each affected owner with a **separate** MCP call (one slug per call, v1). Apply in **depth-first expand** context — notify open row owners when the list, sequencing, or per-row scope changes. Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+After a **material** decomposition or **`### PR list`** change on the target plan that affects named child row owners (active **or** terminal **`pr-plan`** per rule **4** § *Planner-lane wake*), notify each affected owner with a **separate** MCP call (one slug per call, v1). Apply in **depth-first expand** context — notify row owners when the list, sequencing, or per-row scope changes. Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 
 | Emit when | Target child slugs (examples) | Do not notify |
 |-----------|------------------------------|---------------|
-| PR list edit, **`### Sequencing`** change, or per-row scope change affects open row owners | **`new-plan`** / **`coding-session`** child lanes for affected **`### PR list`** indices in **`activeLanes`** / **`childRows`** with non-terminal status | Terminal rows; indices not yet expanded; empty or speculative **`targetSlugs`** |
+| PR list edit, **`### Sequencing`** change, or per-row scope change affects row owners | **`new-plan`** / **`coding-session`** child lanes for affected indices with non-terminal status; **terminal `pr-plan`** slugs when a new PR row is added on an existing plan path | Indices not yet expanded with no prior slug; empty or speculative **`targetSlugs`** |
 
-**Forbidden:** empty or speculative **`targetSlugs`**; notify terminal children; broadcast fan-out; using notify instead of **`mission_control_spawn_agent`** for first-time row expansion.
+**Forbidden:** empty or speculative **`targetSlugs`**; broadcast fan-out; duplicate spawn when a **`pr-plan`** slug exists for the plan path; using notify instead of **`mission_control_spawn_agent`** for **first-time** row expansion with no prior slug.
 
 ### MCP notify preflight (`mission_control_notify_child_lanes`)
 
@@ -129,11 +128,11 @@ After a **material** decomposition or **`### PR list`** change on the target pla
 | N1 | Caller authority — **`pr-breakdown`** may notify descendant slugs for affected PR row owners only |
 | N2 | Required args present: **`summary`**, **`changeType`**, **`affectedPlanPaths`** (non-empty), **`targetSlugs`** (exactly one slug) |
 | N3 | **Forbidden args absent** — no host-resolved identity keys, no **`notifyAllDescendants`** |
-| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique **non-terminal** child slug per call |
+| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique child slug per call (terminal **`pr-plan`** slugs allowed per rule **4** § *Planner-lane wake*) |
 | N5 | **`affectedPlanPaths`** includes the parent plan and affected child PR plans for the row |
 | N6 | Multiple row owners → **separate MCP calls** (one slug per call, v1) |
-| N7 | Omit terminal / ship-complete rows from **`targetSlugs`** before calling |
-| N8 | New PR row expansion → **`mission_control_spawn_agent`** (inline **`new-plan`** or spawn) — never notify as a spawn workaround |
+| N7 | Include **terminal planner** slugs when **`affectedPlanPaths`** intersects; omit terminal **leaf** rows (`coding-session`) per rule **4** § *Leaf-lane omission* |
+| N8 | **First-time** PR row expansion with no prior slug → **`mission_control_spawn_agent`** (inline **`new-plan`** or spawn) — when slug exists → notify, never duplicate spawn |
 
 ## Trigger
 
@@ -145,6 +144,11 @@ After a **material** decomposition or **`### PR list`** change on the target pla
 The **developer** picks the next move per **30_planning-target-resolution** § *Sedea input channel*.
 
 ## Checkpoint turn UX (skill-local)
+
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`pr-breakdown`**; other planning skills document their own markers.
 
@@ -246,7 +250,7 @@ Return `partial` with `remainingTasks` naming the retarget — **not** permissio
 
 ## Step 2 — Load the development-process doc
 
-Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit** (hosting repo root). Acknowledge in one sentence: *"Loaded development-process.md; will follow § 3 PR breakdown set-level template + § 6/§ 5 contents rule."*
+Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit** (slim core). Then read `.sedea/centers/research-and-development/docs/planning-mode-templates.md` in full. Acknowledge in one sentence: *"Loaded development-process core + planning-mode-templates; will follow § 3 PR breakdown set-level template + § 6/§ 5 contents rule."*
 
 This is a **standards document**, not an executable plan — its sections describe the process you apply. Re-read on every invocation; do not rely on session memory.
 
@@ -339,7 +343,7 @@ The output is the three set-level sub-sections from **development-process.md** �
 
 ### 5a — Infer PR boundaries from the parent plan
 
-**PR sizing metrics:** apply **`.sedea/centers/research-and-development/docs/development-process.md`** § *PR sizing — test cases and kinds of changes* (canonical). Keep in sync with **`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`** § *Keep PRs small and focused* — edit the development-process subsection first when buckets or kinds rules change.
+**PR sizing metrics:** apply **`.sedea/centers/research-and-development/docs/planning-mode-templates.md`** § *PR sizing — test cases and kinds of changes* (canonical). Keep in sync with **`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`** § *Keep PRs small and focused* — edit the planning-mode-templates subsection first when buckets or kinds rules change.
 
 Read the target plan’s earlier sections:
 
@@ -352,12 +356,12 @@ Pick PR boundaries that respect Strategy #6 (single concern per deliverable) and
 - PRs are ordered when there is a real sequencing constraint (schema migration before consumers; feature flag before code that reads it; contract change before UI that consumes it). Otherwise they can run in parallel.
 - Aim for **2–5 PRs** in a typical multi-PR pass. **Exactly one PR** is a **first-class** outcome — use **step 5s** or **`pr_breakdown_single`**; do **not** treat it as an error. More than ~6 PRs usually means the plan should have stayed at **`Delivery phases`** first — **flag** when you proceed anyway.
 - Each PR must be **shippable on its own** (Strategy #4): merging it should leave the system in a working state. Flag non-obvious reliance on flags, additive schema, or compat layers per PR.
-- **Size each candidate PR by test-case count, not by lines** (canonical: **development-process.md** § *PR sizing — test cases and kinds of changes*). For each PR under consideration, estimate **test cases** it introduces or meaningfully changes — unit + integration / snapshot + exploratory recordings, each enumerated case counted once. Buckets: **≤ 10** simple, **11–20** mid-sized, **21+** heavy (same thresholds as rule **20** § *Keep PRs small and focused*). Heavy is a signal to **investigate** splitting — not automatically wrong. Do not split within one **kind** of change (instance batching). Raw changed-line count is **not** a size signal.
+- **Size each candidate PR by test-case count, not by lines** (canonical: **`planning-mode-templates.md`** § *PR sizing — test cases and kinds of changes*). For each PR under consideration, estimate **test cases** it introduces or meaningfully changes — unit + integration / snapshot + exploratory recordings, each enumerated case counted once. Buckets: **≤ 10** simple, **11–20** mid-sized, **21+** heavy (same thresholds as rule **20** § *Keep PRs small and focused*). Heavy is a signal to **investigate** splitting — not automatically wrong. Do not split within one **kind** of change (instance batching). Raw changed-line count is **not** a size signal.
 - **Kinds-of-changes lens** (same canonical subsection). Count **distinct kinds** — N instances of the same shape across N files is one kind. **A reviewer agent** reads the first instance carefully and skims the rest. Split only when each half ships value on its own.
 
 ### 5b — Draft each sub-section per the doc’s § 3 set-level template
 
-Apply **development-process.md** § 3 *Set-level template* literally. The three sub-sections, in order:
+Apply **`planning-mode-templates.md`** § 3 *Set-level template* literally. The three sub-sections, in order:
 
 #### `### Single-concern strategy`
 
@@ -365,7 +369,7 @@ One or two sentences on how this plan keeps each PR single-concern (Strategy #6)
 
 #### `### Sequencing`
 
-How PRs relate in time — **authoritative for depth-first expand eligibility** (see **development-process.md** § *Depth-first plan-tree traversal*). Use staged bullets with explicit **`(sequential)`** or **`(parallel)`** labels, e.g. *Stage 1 (sequential): PR 1 → PR 2; Stage 2 (parallel): PR 3, PR 4*. Labels must match bolded titles in **`### PR list`**. Optional Mermaid supplements the bullets; when both exist, the staged bullet form governs **`new-plan`** gates.
+How PRs relate in time — **authoritative for depth-first expand eligibility** (see **development-process.md** § *Depth-first plan-tree traversal*). Use staged bullets with explicit **`(sequential)`** or **`(parallel)`** labels, e.g. *Stage 1 (sequential): PR 1 → PR 2; Stage 2 (parallel): PR 3, PR 4*. Labels must match bolded titles in **`### PR list`**. Optional Mermaid supplements the bullets; when both exist, the staged bullet form governs **`new-plan`** gates. When emitting Mermaid, follow [`.sedea/centers/sedea/docs/mermaid-authoring.md`](.sedea/centers/sedea/docs/mermaid-authoring.md) (opaque ids, sequence `Note` single-line, no bare `;` in message labels, flowchart-only `<br/>`).
 
 #### `### PR list`
 
@@ -411,7 +415,7 @@ After writing, read the file back and confirm the section reads as intended.
 
 After step **5c**, present step **6** handoff in **one turn** via **`mission_control_present_structured_choice`** or **AskQuestion tool** — put in **`displayMarkdown`** (or brief prose with the tool):
 
-1. A **`file://`** link to the target `.plan.md` under `.sedea/operations/.../plans/...` (resolved path from **`plan-state resolve`** or equivalent).
+1. A backtick path to the target `.plan.md` (prefer the hosting-absolute path resolved by **`plan-state resolve`** or equivalent; a `.sedea/operations/…/plans/…` path is also valid). Do **not** use a `file://` Markdown link or put backticks inside a Markdown link label.
 2. One line: *Drafted `## <N>. PR breakdown` with **K** PR rows — open the plan to review the full section.*
 
 Do **not** mirror the full **`PR breakdown`** body in chat (no duplicated headings, tables, Mermaid fences, or numbered PR list). The plan file is the review surface.
@@ -502,7 +506,7 @@ When the **developer** chooses hand off or populate children in standalone use, 
 
 1. Append each item to the **target master or phase plan** **`## Follow-ups`** (resolved from **`targetPlanPath`** on this skill or bubbled **`parentPlanPath`**).
 2. Track **`pendingParentFollowUps[]`** on this lane's ledger — **do not** treat follow-ups as **`expand-eligible`** or auto-expand the next **`### PR list`** row.
-3. **Re-emit updated** terminal or **`## Completion (inline)`** with merged follow-up **`outputs`** per **`../README.md`** § *Upstream parent follow-up notification*.
+3. **Re-emit updated** terminal or **`## Completion (inline)`** with merged follow-up **`outputs`** per `docs/spawn-ship-contracts.md` § *Upstream parent follow-up notification*.
 
 **Standalone spawned `new-plan`:** When Mission Control delivers a child result from a spawned **`new-plan`** lane:
 
@@ -535,6 +539,19 @@ Match the discipline in **`master-planner`**, **`delivery-phases`**, and **`phas
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below (spawned standalone only); **forbidden** while **`continuationStatus: active`** |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| Inline under **`master-planner`** / **`phase-planner`** | **N/A** — use **`## Completion (inline)`**; no refocus |
+| **`continuationStatus: active`**; open children; pending approval | **Forbidden** |
+| **`continuationStatus: terminal`** on a **spawned** standalone run | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "pr-breakdown-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 

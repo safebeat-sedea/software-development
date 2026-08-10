@@ -66,9 +66,7 @@ laneRules:
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/pr-plan/SKILL.md"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
-  - ".sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc"
   - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
-  - ".sedea/centers/research-and-development/docs/development-process.md"
   - ".sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc"
 ---
 
@@ -86,22 +84,22 @@ The procedure below is a hard contract — do **not** skip steps or start drafti
 
 ## Warm-up manifest (spawned)
 
-Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Normative **inline** on invoker lane; manifest applies when standalone spawned or warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **No `alwaysApply` frontmatter flip.**
+Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea/docs/lane-manifest-contract.md) and **`../README.md`** § *Default warm-up*. Normative **inline** on invoker lane; manifest applies when standalone spawned or warm-up replay. Host merge: `effectiveWarmUp = dedupe(bootstrapRules → laneRules → skillWarmUp)`. **384 KiB cap:** frontmatter omits **`plan.mdc`**, **`development-process.md`** — explicit **`Read`** at named protocol steps. **No `alwaysApply` frontmatter flip.**
 
-### `bootstrapRules` — host-resolved (R&D layer)
+### `bootstrapRules` — host-resolved (Software Development center layer)
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole R&D `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
+| `.sedea/centers/research-and-development/rules/bootstrap.mdc` | Sole Software Development `alwaysApply: true` bootstrap (≤10 KB); host merges when `centerSlug === research-and-development` |
 
 ### `skillWarmUp` — frontmatter `warmUpRules`
 
 | Path | Purpose |
 |------|---------|
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc` | Squad Leader ledger, spawn/wait |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
-| `.sedea/centers/research-and-development/docs/development-process.md` | NFD process templates |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Slim spawn contracts, terminal stop |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Target resolution, depth-first gates |
+
+**Omitted from frontmatter (384 KiB spawn cap — runtime `Read`):** `plan.mdc`, `development-process.md`, `planning-mode-templates.md` — load at named protocol steps.
 
 ### `laneRules` — frontmatter `laneRules`
 
@@ -110,7 +108,7 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice, AskQuestion |
 | `.sedea/centers/research-and-development/rules/30_planning-target-resolution.mdc` | Planning target resolution (role minimum) |
 | `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/pr-plan/SKILL.md` | This skill procedure |
-| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight, definitive `laneRules` |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn preflight M1–M9, definitive `laneRules` |
 
 ## Agent messaging (MCP)
 
@@ -125,20 +123,22 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 **Binding:**
 
 - Run **`../README.md`** § *MCP spawn preflight* (rows M1–M8) before every MCP spawn; **forbidden** host-resolved identity keys in MCP args (`correlationId`, `dispatchId`, `slotId`, … — see README § *Host-resolved identity*).
-- Run **`../README.md`** § *MCP notify preflight* (rows N1–N8) before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+- `Read` **`docs/spawn-ship-contracts.md`** § *MCP notify preflight* (rows N1–N8) — then run notify preflight before every **`mission_control_notify_child_lanes`** call — cross-ref **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 - Inline skills on this mission stay **inline-only** — no spawn wire change unless the protocol step explicitly spawns a child lane.
+- **Relevant Links (post-write):** After each Write/StrReplace that **creates or materially edits** this PR plan, call MCP **`mission_control_update_relevant_documents`** with the absolute plan path (`kind: plan`) — same turn preferred. **Skip** read-only loads and unchanged already-registered paths. Does **not** replace terminal `targetPlanPath` outputs. See **`../README.md`** § *Relevant Links — post-write registration*.
 
 ### Plan-change notify — emit-when (`mission_control_notify_child_lanes`)
 
-After a **material** edit to this target PR plan §§ **1–4** (or § **5–8** sketch chosen on this lane) that affects **ongoing work** on the open **`coding-session`** child for this row, notify that child with a **separate** MCP call (one slug per call, v1). Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
+After a **material** edit to this target PR plan §§ **1–4** (or § **5–8** sketch chosen on this lane) that affects the open **`coding-session`** child **or** reopens this **terminal** PR plan row, notify with a **separate** MCP call (one slug per call, v1). Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notify protocol*.
 
 | Emit when | Target child slugs (examples) | §5e alignment |
 |-----------|------------------------------|---------------|
-| Material §§1–4 / handoff sketch edit while **`coding-session`** is non-terminal for this **`targetPlanPath`** | Dispatch-unique **`coding-session-<targetPlanSlug>`** (or slug recorded in **`outputs.spawnCorrelationId`** / **`activeLanes`**) | Notify **does not replace** §5e child terminal merge — still aggregate **`mission_control_send_agent_result`**; notify is handoff only |
+| Material §§1–4 / handoff sketch edit while **`coding-session`** is non-terminal for this **`targetPlanPath`** | Dispatch-unique **`coding-session-<targetPlanSlug>`** (or slug in **`activeLanes`**) | Notify **does not replace** §5e child terminal merge |
+| Material edit while this **`pr-plan`** lane is **terminal** but parent adds PR scope on this plan path | Parent notifies **this lane's slug** (terminal wake) — **forbidden** duplicate **`pr-plan`** spawn | Receive § *Terminal wake* below |
 
-**Material edit** includes: §1 single-concern scope change, §3 change-scope bullet adds/removes/rewrites, §4 reasoning that alters implementation constraints, and §5–8 sketch edits after **`prefill-sections`**.
+**Material edit** includes: §1 single-concern scope change, §3 change-scope bullet adds/removes/rewrites, §4 reasoning that alters implementation constraints, §5–8 sketch edits after **`prefill-sections`**, and **add-PR-to-ship-complete-row** parent list edits.
 
-**Forbidden:** empty or speculative **`targetSlugs`**; notify terminal / ship-complete children; notify instead of §5d spawn for first-time handoff; using notify when no open **`coding-session`** child exists for this plan.
+**Forbidden:** empty or speculative **`targetSlugs`**; notify terminal **`coding-session`** children; notify instead of §5d spawn for **first-time** handoff; duplicate spawn when slug exists.
 
 ### MCP notify preflight (`mission_control_notify_child_lanes`)
 
@@ -147,11 +147,11 @@ After a **material** edit to this target PR plan §§ **1–4** (or § **5–8**
 | N1 | Caller authority — **`pr-plan`** may notify the open **`coding-session`** child slug for **`inputs.targetPlanPath`** only |
 | N2 | Required args present: **`summary`**, **`changeType`**, **`affectedPlanPaths`** (non-empty), **`targetSlugs`** (exactly one slug) |
 | N3 | **Forbidden args absent** — no host-resolved identity keys, no **`notifyAllDescendants`** |
-| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique **non-terminal** child slug per call |
+| N4 | **`targetSlugs`** contains exactly **one** dispatch-unique child slug per call |
 | N5 | **`affectedPlanPaths`** includes this target PR plan (and parent plan when parent row context changed) |
 | N6 | Multiple children → **separate MCP calls** (one slug per call, v1) — rare on this skill; default one **`coding-session`** child per PR plan |
-| N7 | Omit terminal lanes from **`targetSlugs`** before calling |
-| N8 | First implementation handoff → **`mission_control_spawn_agent`** §5d — never notify as a spawn workaround |
+| N7 | Notify open **`coding-session`** only when non-terminal; terminal **`pr-plan`** wake is **receive-only** on this lane from parent — omit terminal leaf slugs per rule **4** § *Leaf-lane omission* |
+| N8 | **First-time** implementation handoff → **`mission_control_spawn_agent`** §5d — when slug exists → parent notifies, never duplicate spawn |
 
 ### Plan-change notification receive (child lane)
 
@@ -162,7 +162,9 @@ When Mission Control delivers **`Mission Control: plan-change-notification deliv
 1. Parse host envelope fields: **`summary`**, **`changeType`**, **`affectedPlanPaths`**, optional **`excerptPointers`**, **`requestedChildActions`**, **`initiatingContext`**.
 2. **`Read`** each **`affectedPlanPaths`** entry in full before acting.
 3. Compare to **`inputs.targetPlanPath`**, **`inputs.parentPlanPath`**, parent **`### PR list`** row **N**, and open **`coding-session`** child state — do **not** close the PR plan row solely because notify arrived.
-4. Keep **`outputs.continuationStatus: active`** while §5c is not yet offered, a **`coding-session`** child is open, or blocking **`remainingTasks`** remain.
+4. Keep **`outputs.continuationStatus: active`** while §5c is not yet offered, a **`coding-session`** child is open, or blocking **`remainingTasks`** remain — on **terminal wake**, clear ship-complete flags when resuming PR scope expansion.
+
+**Terminal wake (binding):** When this lane was terminal and notify intersects **`inputs.targetPlanPath`**, reactivate — **forbidden** parent duplicate spawn.
 
 **Checkpoint vs external-wait (binding):** Notify delivery is **developer-input USER_CHECKPOINT** — **not** external-wait. Emit structured choice on the same turn after re-read; do **not** auto-advance to §5d spawn, §5e terminal merge, or **`mission_control_send_agent_result`** solely because notify arrived.
 
@@ -172,6 +174,7 @@ USER_CHECKPOINT — parent plan-change notification received on pr-plan child la
 
 | Option id | Label |
 |-----------|--------|
+| `add-pr-scope` | Add PR scope — resume PR plan after terminal wake |
 | `acknowledge-only` | Acknowledge — continue PR plan work with updated context |
 | `re-read-revise` | Re-read / revise affected PR or parent plan sections |
 | `plan-reconcile` | Run inline **`plan-reconcile`** when authorized |
@@ -183,6 +186,7 @@ USER_CHECKPOINT — parent plan-change notification received on pr-plan child la
 
 | Option | Act |
 |--------|-----|
+| **`add-pr-scope`** | Reactivate terminal lane: set **`continuationStatus: active`**; revise §§ or §5–8 sketch for added scope; re-offer §5c when ready — **re-emit updated** terminal when standalone spawned |
 | **`acknowledge-only`** | Merge notify context into lane ledger; resume prior step — **no** terminal MCP result |
 | **`re-read-revise`** | Update target PR plan §§ or spawn **`inputs`** when paths intersect — keep row open |
 | **`plan-reconcile`** | Inline **`plan-reconcile`** per contract — merge ledger; **no** terminal result solely from notify |
@@ -218,6 +222,11 @@ Normative protocol: **`.sedea/centers/sedea/rules/4_mission.mdc`** § *MCP notif
 The **developer** picks the next move per **30_planning-target-resolution** § *Sedea input channel*.
 
 ## Checkpoint turn UX (skill-local)
+
+### Software Development center edit destination gate (binding)
+
+When this skill would write under **`.sedea/centers/research-and-development/`**, open **USER_CHECKPOINT** per **`missions/plan-and-deliver/skills/README.md`** § *Software Development center edit destination gate* **before** any center write. Happy-path operations/plan writes do not open this gate. **Forbidden:** skip the gate; treat `sedea-centers/software-development` as Own on `sedea-ai/app`.
+
 
 Under Checkpoint trust (`trustLevel: checkpoint`), auto-advance scripted happy-path steps; emit structured choice only at **USER_CHECKPOINT** markers in this section, implicit external-wait surfaces, or exception paths. **No cross-skill inheritance** — gate defaults here apply only to **`pr-plan`**; other planning skills document their own markers.
 
@@ -301,7 +310,7 @@ If `parentPlanPath` / `parentPlanSlug` inputs were supplied, they must match the
 
 ## Step 2 — Load the development-process doc
 
-Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit** (hosting repo root). Acknowledge: *"Loaded development-process.md; will follow § 3 per-PR template + § 6/§ 5 contents rule."*
+Read `.sedea/centers/research-and-development/docs/development-process.md` with the Read tool, **no offset, no limit** (slim core). Then read `.sedea/centers/research-and-development/docs/planning-mode-templates.md` in full. Acknowledge: *"Loaded development-process core + planning-mode-templates; will follow § 3 per-PR template + § 6/§ 5 contents rule."*
 
 Re-read every invocation; do not rely on session memory.
 
@@ -453,8 +462,9 @@ Otherwise append this list item **immediately before** `isProject:` (indentation
  content: >-
  Mark done only when every Before-deploy and After-deploy step is checked
  (`[x]`) and the deploy section `**Status:**` reads `done` (walk via `deploy-walk`,
- or edit manually). Independent of PR merge; run `plan-reconcile` protocol branch when you want
- reconcile/archive after merges.
+ or edit manually). Independent of PR merge; run inline `plan-reconcile` on the active
+ `coding-session` lane while the dispatch is open when you want reconcile/archive after merges
+ — not after dispatch resolution.
  status: pending
 ```
 
@@ -467,6 +477,21 @@ Echo: *"Inserted frontmatter todo `deploy-test-plan-verified` (per development-p
 ### What not to draft here
 
 Do **not** fully author §§ 5–8 as final text in the same turn as **4a** unless the **developer** explicitly chose a **fill** option in step 5 — those sections are usually best filled in **`coding-session`** once code paths exist. **`pre-pr-review`** treats missing or **`_TBD_`** § 5 / § 7 as hard problems and § 6 as under-documentation risk when the skill is run with strict gates — leaving **`_TBD_`** after **4a** is expected.
+
+### §7 deploy fill contract (binding — `prefill-sections` and §5–8 sketch)
+
+When the developer chooses **`prefill-sections`** or asks for a § 7 sketch on this lane, follow **planning-mode-templates.md** § mode #3 § 7 **What NOT to include** — especially **Ship-chain and mission-protocol steps**.
+
+| Allowed in **`### Before deploy`** / **`### After deploy`** | **Forbidden** (ship chain — owned by **`coding-session`**) |
+|---------------------------------------------------------------|--------------------------------------------------------------|
+| PR-specific verification beyond standing CI and § 6 tests | `plan-reconcile`, archive PR plan, **`pr-ship-complete`** |
+| Production smoke / monitor / rollback checks for **this change** | Pre-PR review, create PR, PR review, approve/merge PR |
+| Submodule attestation when **this PR** changes a gitlink | Worktree setup, attach, cleanup; **`git pull origin main`** |
+| | **`promote-submodule-pin`**, dispatch resolution, generic protocol-step rows |
+
+**`plan-reconcile` wording (binding):** **Forbidden** After deploy lines such as *Archive via plan-reconcile when dispatch closes* or *defer plan-reconcile to dispatch close*. Correct timing: inline on the **active `coding-session` lane while the dispatch is open**, before Squad Leader dispatch resolution — see **development-process.md** § *§7 Deploy test plan — ship-chain boundary*.
+
+Mark § 7 sketches explicitly as *sketch* in echo; **`coding-session`** owns substantive fill and may revise steps once code paths are known.
 
 ## Step 5 — Resolve implementation readiness
 
@@ -559,7 +584,7 @@ Invoke **AskQuestion** or **`mission_control_present_structured_choice`** per **
 
 When using the legacy split, do **not** include **`mission_control_spawn_agent`** or **`mission_control_send_agent_result`** in the recap message. Put recap content in **`displayMarkdown`** and **`askQuestion`** on the **same** turn per [`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`](.sedea/centers/sedea/rules/2_ask-question-instructions.mdc) § **Turn completion invariant**. **Obsolete:** recap-only message with **AskQuestion** deferred to a separate turn.
 
-1. A **`file://`** link to the target `.plan.md` under `.sedea/operations/.../plans/...`.
+1. A backtick path to the target `.plan.md` (prefer the hosting-absolute path; a `.sedea/operations/…/plans/…` path is also valid). Do **not** use a `file://` Markdown link or put backticks inside a Markdown link label.
 2. One-line summary: *Drafted per-PR §§ 1–4; implementation readiness: `<ready|not ready>`.*
 3. Planning handoff note: *§§ **5–8** stay **`_TBD_`** until **`coding-session`** fills them on the implementation lane (or you choose **Pre-fill §§ 5–8 here (sketch, then coding)** below). Worktree validation may report **incomplete** — that is expected; the child lane **auto-starts** implementation when you pick **Start coding session** (no second approval modal) unless you pre-filled here or use detached entry.*
 
@@ -619,8 +644,17 @@ Run only when the developer chose **`start-coding-session`** and §5a readiness 
  - `name`: `PR{parentIndex}-{semantic title}` when **`parentIndex`** is known — semantic title from §1 single concern or **`targetPlanSlug`**; otherwise `PR-{semantic title}` — **not** generic "Coding session" alone (≤64 chars; truncate semantic title if needed). Prefix per [rule **50**](../../../../rules/50_mission-control-display-metadata-discipline.mdc) § *Lane title prefix conventions*
  - `slug`: `coding-session-<targetPlanSlug>` (unique per dispatch)
  - `description`: one-line implementation scope (for example *Worktree and implementation for PR N …*)
- - `inputs`: `targetPlanPath`, `targetPlanSlug`, `readyForImplementation`, `planningHandoffApproved: true` (only when `readyForImplementation: true`), `planningHandoffMode: "sections-1-4-complete"` (required when `readyForImplementation: true`), `repoPath`, `ledgerParent`, `upstreamSkill: "pr-plan"`; include `parentPlanPath`, `parentPlanSlug`, `parentIndex` when known
+ - `inputs`: `targetPlanPath`, `targetPlanSlug`, `readyForImplementation`, `planningHandoffApproved: true` (only when `readyForImplementation: true`), `planningHandoffMode: "sections-1-4-complete"` (required when `readyForImplementation: true`), `repoPath`, `ledgerParent`, `upstreamSkill: "pr-plan"` (or **`"debug-and-fix"`** when this lane’s invoker / seed is **`upstreamSkill: debug-and-fix`** — see **Reuse worktree ownership** below); include `parentPlanPath`, `parentPlanSlug`, `parentIndex` when known
  - Optional `warmUpRules`: merge **`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`** if not already loaded from skill frontmatter
+ - **Reuse worktree ownership (binding — debug / inherited handoff):** When this lane received an absolute existing hosting-repo **`worktreePath`** (and usually **`worktreeName`**) from an upstream debug or similar seed — especially **`inputs.upstreamSkill === "debug-and-fix"`** or debug handover in **`initiatingPrompt`** — **and** that path already exists on disk, §5d **must** forward ownership onto the **`coding-session`** spawn, not only path/name:
+   - `worktreePath` / `worktreeName` — exact absolute path and branch name from the seed
+   - `worktreeOwnership: "inherited"`
+   - `worktreeCreatedByUpstream` — creating skill slug (e.g. **`debug-and-fix`**)
+   - `mountedViaMcp: true` when upstream already ran **`sedea_add_worktree_folder`** for that path; otherwise `false` (child may attach once — still **no** new **`worktree-setup.sh`** for ownership)
+   - `developerApprovedImplementation: true` when the invoker already authorized reuse (debug code-promotion path)
+   - Set **`upstreamSkill: "debug-and-fix"`** when the seed’s upstream was debug-and-fix (overrides default **`pr-plan`** label for that spawn)
+   - **`initiatingPrompt`** must state: inherit cleanup ownership for this path; post-merge auto-cleanup is authorized; remount-only reuse is **not** unclear ownership
+   - **Forbidden:** spawn **`coding-session`** with only `worktreePath` / `worktreeName` after inheriting ownership yourself; telling the child ownership is unclear because **this** §5d lane did not run **`worktree-setup.sh`**
 
 4. Emit **`mission_control_spawn_agent`**, announce waiting for the **`coding-session`** child result, and close the turn with structured choice per [`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`](.sedea/centers/sedea/rules/2_ask-question-instructions.mdc) § **Turn completion invariant** — no second spawn in the same turn; do not prose-only stop.
 5. Set `implementationHandoffStatus: "spawned-coding-session"` and record `spawnCorrelationId` matching the spawn request until the child terminal arrives.
@@ -668,6 +702,20 @@ Stop after the step 5c **AskQuestion** turn, after §5d spawn announcement, or a
 | R2 | **Forbidden args absent** — no **`correlationId`**, **`dispatchId`**, **`slotId`**, or other host-resolved keys |
 | R3 | Populate **`outputs`** from the required field list below |
 | R4 | Re-emit updated MCP result after user-requested follow-up on this lane (same spawn session; host resolves **`correlationId`**) |
+| R5 | **`mission_control_refocus_parent_lane`** — when **Required** per § *MCP parent refocus* below (spawned standalone only); **forbidden** while **`continuationStatus: active`** |
+
+### MCP parent refocus (`mission_control_refocus_parent_lane`)
+
+| Signal on this terminal | Refocus? |
+|-------------------------|----------|
+| Inline under **`new-plan`** | **N/A** — use **`## Completion (inline)`**; no refocus |
+| **`continuationStatus: active`**; open **`coding-session`**; §5c menu not yet offered | **Forbidden** |
+| Notify-only turns | **Forbidden** |
+| **`continuationStatus: terminal`** on a **spawned** standalone run | **Required** |
+
+Call **`mission_control_refocus_parent_lane`** (optional `{ "reason": "pr-plan-complete" }` — no host-resolved identity keys) **immediately before** **`mission_control_send_agent_result`** when **Required** above. See **`../README.md`** § *Parent refocus on terminal*.
+
+**Message order on terminal turns:** optional recap → **`mission_control_present_structured_choice`** (when a gate is open) → **`mission_control_refocus_parent_lane`** (when required) → **`mission_control_send_agent_result`** (**last**).
 
 Required `outputs` fields:
 
