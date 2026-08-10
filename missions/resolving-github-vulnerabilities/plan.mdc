@@ -115,17 +115,17 @@ USER_CHECKPOINT — confirm mission intent when the opening command phrase does 
 
 - **Type:** Simple skill execution (leader inline)
 - **Intent:** Produce an alert inventory with recommended fixes where GitHub provides them.
-- **Inputs:** Scoped `owner/repo` (default: hosting repo remote); optional ecosystem filter from remainder.
-- **Expected output:** `alertList` (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, path hint).
+- **Inputs:** Scoped `owner/repo` list from **Target apps** — default both **`safebeat/app`** and **`safebeat/ucsf-study`**; optional single-repo or ecosystem filter from opening remainder / structured pick. **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
+- **Expected output:** `alertList` (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, `owner/repo`, path hint inside that product repo).
 - **Next-step resolution:** Non-empty list or explicit empty-with-confirm → §3. Auth/tool failure → USER_CHECKPOINT below.
 
 USER_CHECKPOINT — recover `gh` auth or pick scoped repo when inventory cannot run.
 
 **Procedure**
 
-1. Resolve GitHub repo from `git remote` / opening remainder.
-2. Query alerts with **`gh`** (for example Dependabot alerts and code-scanning alerts APIs available to the token). Prefer machine-readable JSON.
-3. Map each alert to backend (Poetry / `app/backend`) vs frontend (Yarn / `app/frontend`) when the vulnerable package path indicates it; otherwise leave ecosystem TBD for §3.
+1. Resolve inventory repos: use opening remainder / structured pick when it names **`safebeat/app`** or **`safebeat/ucsf-study`**; otherwise inventory **both**. **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target.
+2. For each scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`.
+3. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §3. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
 4. Summarize in **`displayMarkdown`** (or brief prose) and continue to §3.
 
 ### 3. Triage with the developer
