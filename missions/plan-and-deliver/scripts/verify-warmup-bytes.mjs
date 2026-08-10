@@ -46,7 +46,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CENTER_ROOT = path.resolve(__dirname, '../../..');
 const SEDEA_RULES_DIR = '.sedea/centers/sedea/rules';
-const SD_BOOTSTRAP_RULE = '.sedea/centers/software-development/rules/bootstrap.mdc';
+const SD_BOOTSTRAP_RULE = '.sedea/centers/research-and-development/rules/bootstrap.mdc';
 
 const PLAN_AND_DELIVER_PREFIX = 'missions/plan-and-deliver/skills/';
 

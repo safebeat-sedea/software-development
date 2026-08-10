@@ -58,6 +58,6 @@ Software Development center agents **reference** host overlay docs in plans; **i
 
 ## Related R&D governance
 
-- Software Development discipline rule: [`.sedea/centers/software-development/rules/50_mission-control-display-metadata-discipline.mdc`](../rules/50_mission-control-display-metadata-discipline.mdc)
+- Software Development discipline rule: [`.sedea/centers/research-and-development/rules/50_mission-control-display-metadata-discipline.mdc`](../rules/50_mission-control-display-metadata-discipline.mdc)
 - Platform authority: [`.sedea/centers/sedea/rules/9_display-metadata-authority.mdc`](.sedea/centers/sedea/rules/9_display-metadata-authority.mdc)
-- Agent UX pitfalls: [`.sedea/centers/software-development/docs/development-process.md`](development-process.md) § *Agent UX pitfalls*
+- Agent UX pitfalls: [`.sedea/centers/research-and-development/docs/development-process.md`](development-process.md) § *Agent UX pitfalls*

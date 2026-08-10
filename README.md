@@ -1,6 +1,6 @@
-# Software Development — Sedea Governance Center
+# R&D — Sedea Governance Center
 
-This repository is a **Sedea Governance Center** for **Sedea-governed hosting repos**. It defines how agents and developers plan, implement, ship, and verify software under **Sedea Governance** — the rules, missions, and skills pinned from `.sedea/centers/software-development/` in hosting workspaces.
+This repository is a **Sedea Governance Center** for **Sedea-governed hosting repos**. It defines how agents and developers plan, implement, ship, and verify software under **Sedea Governance** — the rules, missions, and skills pinned from `.sedea/centers/research-and-development/` in hosting workspaces.
 
 ## Purpose
 
@@ -13,7 +13,7 @@ Govern end-to-end delivery from idea to production using a **depth-first iterati
 | **Upstream (sedea-centers org)** | `git@github.com:sedea-centers/software-development.git` |
 | **HTTPS** | `https://github.com/sedea-centers/software-development` |
 
-Wave 2 retargets the GitHub repo name to **`software-development`** while **`centerSlug`** and hosting checkout paths remain **`software-development`** until Wave 3 (see center rename PRD on the active dispatch).
+This fork (`safebeat-sedea/research-and-development`) tracks upstream `sedea-centers/software-development`. Hosting checkout **`centerSlug`** remains **`research-and-development`** until a deferred fork rename.
 
 ## Missions
 
@@ -23,6 +23,7 @@ Wave 2 retargets the GitHub repo name to **`software-development`** while **`cen
 | **`quick fix`** | Small, single-PR fixes with minimal planning overhead. |
 | **`plan and deliver a single phase`** | Simplified Master Plan for bounded single-phase work (1–6 PRs, complexity ≤ 20). |
 | **`debug and fix`** | Log-first diagnosis and targeted fixes; optional promotion into broader delivery. |
+| **`resolve github vulnerabilities`** | Inventory and remediate GitHub Dependabot / security alerts across target repos. |
 
 ## License
 

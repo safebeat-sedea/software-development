@@ -8,7 +8,7 @@
  *
  * Run from hosting repo root (directory containing `.sedea/centers/sedea/`):
  *
- *   node .sedea/centers/software-development/missions/plan-and-deliver/scripts/verify-submodule-ship-attestation.mjs
+ *   node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-submodule-ship-attestation.mjs
  *   node .../verify-submodule-ship-attestation.mjs --hosting-root /path/to/hosting --center-slug sedea
  *   node .../verify-submodule-ship-attestation.mjs --outcomes-json /tmp/outcomes.json
  *

@@ -28,8 +28,8 @@ inputs:
     description: Operations user id from Mission Control session context.
     required: true
 warmUpRules:
-  - ".sedea/centers/software-development/missions/debug-and-fix/plan.mdc"
-  - ".sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc"
+  - ".sedea/centers/research-and-development/missions/debug-and-fix/plan.mdc"
+  - ".sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc"
   - ".sedea/centers/sedea/skills/worktree-setup/SKILL.md"
   - ".sedea/centers/sedea/rules/0_hosting-repo.mdc"
   - ".cursor/rules/dot-sedea.mdc"
@@ -189,7 +189,7 @@ USER_CHECKPOINT — approve fix proposal, request revision, or abort on this lan
 
 ### 4 — Worktree create, attach, bootstrap (binding)
 
-Follow [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Attach worktree to VS Code workspace*, [`.sedea/centers/sedea/skills/worktree-setup/SKILL.md`](../../../../../sedea/skills/worktree-setup/SKILL.md), and [rule **20**](.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc) § *Worktree setup in plans* / *Bootstrap profiles*:
+Follow [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Attach worktree to VS Code workspace*, [`.sedea/centers/sedea/skills/worktree-setup/SKILL.md`](../../../../../sedea/skills/worktree-setup/SKILL.md), and [rule **20**](.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc) § *Worktree setup in plans* / *Bootstrap profiles*:
 
 | Step | Action |
 |------|--------|

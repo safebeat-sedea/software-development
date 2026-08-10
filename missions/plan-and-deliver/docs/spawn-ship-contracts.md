@@ -48,7 +48,7 @@ Planning composition skills that surface review gaps before approval use the sam
 | Source | Contract |
 |--------|----------|
 | [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Worktree ownership* | Four preconditions before detach/remove |
-| [`.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc`](.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc) § *Worktree removal ownership (binding)* | Software Development ship lanes |
+| [`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`](.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc) § *Worktree removal ownership (binding)* | Software Development ship lanes |
 | **`coding-session/SKILL.md`** § *Post-merge workspace cleanup* | Primary post-merge owner |
 | **`plan-reconcile/SKILL.md`** §5 | Idempotent fallback only |
 
@@ -360,8 +360,8 @@ warmUpRules:
 **Repair / verify:** from hosting repo root (with **`scripts/node_modules`** installed):
 
 ```bash
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/fix-skill-frontmatter.mjs --write
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/fix-skill-frontmatter.mjs --write
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
 ```
 
 ### Adding or removing a skill
@@ -372,7 +372,7 @@ When you add, rename, or remove a protocol branch under `missions/plan-and-deliv
 2. **Verify** from the hosting repo root:
 
  ```bash
- node .sedea/centers/software-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
+ node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
  ```
 
 3. **plan-and-deliver only** — if the skill is **spawned**, ensure **`warmUpRules`** includes `missions/plan-and-deliver/plan.mdc`, this README, and the usual rules per § *Default warm-up* above; add **`## Completion (spawned)`** + host protocol line when applicable.
@@ -380,7 +380,7 @@ When you add, rename, or remove a protocol branch under `missions/plan-and-deliv
 ### Scripts (`plan-state.mjs`, `pr-review.mjs`)
 
 - **Location:** `missions/plan-and-deliver/scripts/` for **`plan-state.mjs`** and **`plan-ws-completeness.mjs`**; canonical **`pr-review.mjs`** at **`.sedea/centers/sedea/scripts/pr-review.mjs`** (paths in skills and rule **20** are workspace-root relative from the hosting repo that contains **`.sedea/`** — see that repo’s **`.cursor/rules/`** for hosting-repo specifics).
-- **Runtime:** **Node** (bundled with Sedea / VS Code) — see [`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`](../../../rules/31_dispatch-scope.mdc) § *Hosting repo cwd (scripts)* and the hosting repo **`.cursor/rules/`**.
+- **Runtime:** **Node** (bundled with Sedea / VS Code) — see [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](../../../rules/31_dispatch-scope.mdc) § *Hosting repo cwd (scripts)* and the hosting repo **`.cursor/rules/`**.
 - **Vendor trees:** do not treat `scripts/**/node_modules/` or other installed dependencies as protocol documentation (center governance ends at `SKILL.md`, rules, and mission plans).
 - **`verify-skill-manifest.mjs`** — compares **`center.yaml`** `skillEntries` to on-disk `SKILL.md` files; validates frontmatter YAML; lints **`warmUpRules`** / **`laneRules`** table ↔ frontmatter parity on spawned plan-and-deliver skills; enforces spawn preflight row **11** definitive **`laneRules`** for **`author-prd`**, **`master-planner`**, and **`coding-session`**; lints **`mission_control_spawn_agent`** spawn examples on master-planner skills (Software Development + Sedea maintenance copies) so string-typed **`inputs.parent`** never uses JSON **`null`** — wire encoding must be **`"parent":"null"`**; lints **plan-change notify governance** — parent emit (**`master-planner`**, **`phase-planner`**, **`pr-breakdown`**) N1–N8 preflight rows + child receive (**`coding-session`**, **`phase-planner`**, **`master-planner`**) USER_CHECKPOINT contract + README N1–N8 / v1 receive table (exit 0 = match + parity + spawn wire lint + notify lint).
 
@@ -517,8 +517,8 @@ warmUpRules:
 **Repair / verify:** from hosting repo root (with **`scripts/node_modules`** installed):
 
 ```bash
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/fix-skill-frontmatter.mjs --write
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/fix-skill-frontmatter.mjs --write
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
 ```
 
 ### Adding or removing a skill
@@ -529,7 +529,7 @@ When you add, rename, or remove a protocol branch under `missions/plan-and-deliv
 2. **Verify** from the hosting repo root:
 
  ```bash
- node .sedea/centers/software-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
+ node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/verify-skill-manifest.mjs
  ```
 
 3. **plan-and-deliver only** — if the skill is **spawned**, ensure **`warmUpRules`** includes `missions/plan-and-deliver/plan.mdc`, this README, and the usual rules per § *Default warm-up* above; add **`## Completion (spawned)`** + host protocol line when applicable.
@@ -537,7 +537,7 @@ When you add, rename, or remove a protocol branch under `missions/plan-and-deliv
 ### Scripts (`plan-state.mjs`, `pr-review.mjs`)
 
 - **Location:** `missions/plan-and-deliver/scripts/` for **`plan-state.mjs`** and **`plan-ws-completeness.mjs`**; canonical **`pr-review.mjs`** at **`.sedea/centers/sedea/scripts/pr-review.mjs`** (paths in skills and rule **20** are workspace-root relative from the hosting repo that contains **`.sedea/`** — see that repo’s **`.cursor/rules/`** for hosting-repo specifics).
-- **Runtime:** **Node** (bundled with Sedea / VS Code) — see [`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`](../../../rules/31_dispatch-scope.mdc) § *Hosting repo cwd (scripts)* and the hosting repo **`.cursor/rules/`**.
+- **Runtime:** **Node** (bundled with Sedea / VS Code) — see [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](../../../rules/31_dispatch-scope.mdc) § *Hosting repo cwd (scripts)* and the hosting repo **`.cursor/rules/`**.
 - **Vendor trees:** do not treat `scripts/**/node_modules/` or other installed dependencies as protocol documentation (center governance ends at `SKILL.md`, rules, and mission plans).
 - **`verify-skill-manifest.mjs`** — compares **`center.yaml`** `skillEntries` to on-disk `SKILL.md` files; validates frontmatter YAML; lints **`warmUpRules`** / **`laneRules`** table ↔ frontmatter parity on spawned plan-and-deliver skills; enforces spawn preflight row **11** definitive **`laneRules`** for **`author-prd`**, **`master-planner`**, and **`coding-session`**; lints **`mission_control_spawn_agent`** spawn examples on master-planner skills (Software Development + Sedea maintenance copies) so string-typed **`inputs.parent`** never uses JSON **`null`** — wire encoding must be **`"parent":"null"`**; lints **plan-change notify governance** — parent emit (**`master-planner`**, **`phase-planner`**, **`pr-breakdown`**) N1–N8 preflight rows + child receive (**`coding-session`**, **`phase-planner`**, **`master-planner`**) USER_CHECKPOINT contract + README N1–N8 / v1 receive table (exit 0 = match + parity + spawn wire lint + notify lint).
 

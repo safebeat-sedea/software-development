@@ -118,7 +118,7 @@ Aligned warm-up tables and protocol **USER_CHECKPOINT** markers. Host merge for 
 
 ## Cross-ref index — Software Development skills with Checkpoint turn UX tables
 
-| # | Skill path (under `.sedea/centers/software-development/`) | Calibrated |
+| # | Skill path (under `.sedea/centers/research-and-development/`) | Calibrated |
 |---|----------------------------------------------------------------|------------|
 | 1 | `missions/plan-and-deliver/skills/master-planner/SKILL.md` | yes |
 | 2 | `missions/plan-and-deliver/skills/new-plan/SKILL.md` | yes |
@@ -157,9 +157,9 @@ Aligned warm-up tables and protocol **USER_CHECKPOINT** markers. Host merge for 
 **Verification (Software Development scope):**
 
 ```bash
-find .sedea/centers/software-development -path '*/skills/*/SKILL.md' \
+find .sedea/centers/research-and-development -path '*/skills/*/SKILL.md' \
   -exec rg -l 'Checkpoint turn UX \(skill-local\)' {} \;
-rg -l 'Checkpoint trust \(binding\)' .sedea/centers/software-development/**/plan.mdc
+rg -l 'Checkpoint trust \(binding\)' .sedea/centers/research-and-development/**/plan.mdc
 ```
 
 ---

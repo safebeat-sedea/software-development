@@ -9,7 +9,7 @@
  * Run from HOSTING_ROOT via run-sedea-node.sh:
  *
  *   .sedea/centers/sedea/scripts/run-sedea-node.sh \
- *     .sedea/centers/software-development/missions/plan-and-deliver/scripts/post-merge-ship-mechanics.mjs \
+ *     .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/post-merge-ship-mechanics.mjs \
  *     --dry-run
  *
  *   .../post-merge-ship-mechanics.mjs --hosting-root /path/to/hosting --pr-number 42 --apply

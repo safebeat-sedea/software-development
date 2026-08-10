@@ -96,7 +96,7 @@ Give developers a **consistent state snapshot** during inline reconcile so they 
 | Deploy scope | — (reconcile does not own deploy walk) |
 | Review | — (reconcile does not own PR triage) |
 
-**Population rules:** Same as [`.sedea/centers/software-development/missions/plan-and-deliver/skills/coding-session/SKILL.md`](../coding-session/SKILL.md) § *Session orientation table (binding)* — use inline context; never invent paths or PR numbers.
+**Population rules:** Same as [`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/coding-session/SKILL.md`](../coding-session/SKILL.md) § *Session orientation table (binding)* — use inline context; never invent paths or PR numbers.
 
 **Mandatory gates (this skill):** [Approve PR-tracked reconcile mutations gate](#approve-pr-tracked-reconcile-mutations-gate-binding) (**Non-Checkpoint / exception only** under Checkpoint — clean path auto-advances **`approve-reconcile-mutations`**); [Archive candidates gate](#archive-candidates-gate-binding) (**Non-Checkpoint / exception only** under Checkpoint — clean path auto-selects **own plan only**); [Follow-ups triage gate](#follow-ups-triage-gate-binding); [Post-ship workspace cleanup gate](#post-ship-workspace-cleanup-gate-binding); [Inline closure gate](#inline-closure-gate-binding) (**Non-Checkpoint / exception only** under Checkpoint — clean handback auto-advances **`confirm-inline-closure`**).
 
@@ -248,7 +248,7 @@ Do **not** trigger on the word **`plan`** alone — too generic.
 
 Structured choice to start reconcile vs defer applies only when the developer explicitly invokes reconcile **outside** the post-after-deploy auto chain, or on Non-Checkpoint / exception paths (flagged archive, follow-ups triage with unchecked bullets, missing preconditions).
 
-Detail: **`.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc`** § *deploy-walk vs plan-reconcile (not chained)*; **`.sedea/centers/software-development/docs/development-process.md`** § *Plan reconcile triggers*.
+Detail: **`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`** § *deploy-walk vs plan-reconcile (not chained)*; **`.sedea/centers/research-and-development/docs/development-process.md`** § *Plan reconcile triggers*.
 
 ### Archive readiness when sidecar `prs: []` (binding)
 
@@ -274,7 +274,7 @@ When inline context from **`coding-session`** includes **`submoduleMergeGateStat
 
 ## Script CLI (hosting repo)
 
-All **`plan-state.mjs`** invocations run from **`HOSTING_ROOT`** (the hosting repo whose root contains **`.sedea/`**). Invoke through **`.sedea/centers/sedea/scripts/run-sedea-node.sh`** — **never** bare **`node`** — per rule **20** § *Node launcher (`plan-state.mjs` / `plan-ws-completeness.mjs`)* and § *Hosting repo cwd for scripts (canonical)*; retain [`.sedea/centers/software-development/rules/31_dispatch-scope.mdc`](../../../../rules/31_dispatch-scope.mdc) § *Legacy CLI (`plan-state.mjs`) — hybrid only* for hybrid-runtime context where still accurate.
+All **`plan-state.mjs`** invocations run from **`HOSTING_ROOT`** (the hosting repo whose root contains **`.sedea/`**). Invoke through **`.sedea/centers/sedea/scripts/run-sedea-node.sh`** — **never** bare **`node`** — per rule **20** § *Node launcher (`plan-state.mjs` / `plan-ws-completeness.mjs`)* and § *Hosting repo cwd for scripts (canonical)*; retain [`.sedea/centers/research-and-development/rules/31_dispatch-scope.mdc`](../../../../rules/31_dispatch-scope.mdc) § *Legacy CLI (`plan-state.mjs`) — hybrid only* for hybrid-runtime context where still accurate.
 
 On Mission Control agent lanes, resolve plans via spawn **`inputs.targetPlanPath`** / **`targetPlanSlug`** or **`plan-state.mjs resolve --cwd "$WORKTREE_ROOT"`** — do **not** construct **`.sedea/operations/.../...`** or **`joint/plans`** paths. See rule **31** § *Dispatch scope (binding)* and § *Plans and docs paths*.
 
@@ -282,7 +282,7 @@ On Mission Control agent lanes, resolve plans via spawn **`inputs.targetPlanPath
 # HOSTING_ROOT: walk up until .sedea/centers/sedea/ exists
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   <subcommand> …
 ```
 
@@ -295,7 +295,7 @@ Plans and sidecars live under **`.sedea/operations/…/plans/`** on the dispatch
 ```bash
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   reconcile --dry-run
 ```
 
@@ -316,7 +316,7 @@ Only **`approve-reconcile-mutations`** authorizes:
 ```bash
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   reconcile
 ```
 
@@ -327,7 +327,7 @@ If the developer skips PR-tracked reconcile, do not run non-dry-run `reconcile`;
 ```bash
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   list-candidates --json
 ```
 
@@ -369,7 +369,7 @@ If both lists are empty → skip the gate; continue (step 3.5 only if something 
 
 ### 3.5 — Follow-ups triage
 
-Per **`.sedea/centers/software-development/docs/development-process.md`** (**Cadence** / plan updates): **an un-triaged follow-up is a forgotten one**. Before archiving a plan that has a non-empty **`## Follow-ups`** section, route every bullet.
+Per **`.sedea/centers/research-and-development/docs/development-process.md`** (**Cadence** / plan updates): **an un-triaged follow-up is a forgotten one**. Before archiving a plan that has a non-empty **`## Follow-ups`** section, route every bullet.
 
 **Scope**
 
@@ -403,7 +403,7 @@ For each slug the user picked that is **not** in the **`postponed:`** set from s
 ```bash
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   archive \
   --slug <slug> \
   --signal "<signal-text>"
@@ -436,7 +436,7 @@ On non-zero exit, stop and surface the error.
 ```bash
 cd "$HOSTING_ROOT"
 
-.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/software-development/missions/plan-and-deliver/scripts/plan-state.mjs \
+.sedea/centers/sedea/scripts/run-sedea-node.sh .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/plan-state.mjs \
   detect-stale-workspaces [--slug <slug>] --json
 ```
 
@@ -445,7 +445,7 @@ Each candidate includes `worktreePath`, `repo`, `worktreeName`, `mergedPr` (when
 **Dry-run git plan:**
 
 ```bash
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/post-reconcile-workspace-cleanup.mjs \
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/post-reconcile-workspace-cleanup.mjs \
   --dry-run [--slug <slug>]
 ```
 
@@ -461,7 +461,7 @@ Only **`cleanup-apply`** authorizes **`--apply`**.
 2. Run:
 
 ```bash
-node .sedea/centers/software-development/missions/plan-and-deliver/scripts/post-reconcile-workspace-cleanup.mjs \
+node .sedea/centers/research-and-development/missions/plan-and-deliver/scripts/post-reconcile-workspace-cleanup.mjs \
   --apply [--slug <slug>]
 ```
 
@@ -582,4 +582,4 @@ Maintenance subcommands and future UX — **not** part of the default reconcile 
 
 - **`shippedPrs` frontmatter** — **`reconcile`** / **`archive`** write **`shippedPrs`** from sidecar **`prs[]`** at archive time. **`list-candidates`** prefers that field over body-regex hits when present (adjust step 2 commentary when this field is populated).
 
-- **`backfill-prs-from-body`** — optional pre-step when sidecar **`prs[]`** is empty but merged PRs appear only in plan body prose. Procedure, triggers, and CLI examples: **`.sedea/centers/software-development/docs/development-process.md`** § *Plan metadata backfill (`backfill-prs-from-body`)*. Gate with **AskQuestion** before any non-dry-run run; then continue **Flow** from step 1.
+- **`backfill-prs-from-body`** — optional pre-step when sidecar **`prs[]`** is empty but merged PRs appear only in plan body prose. Procedure, triggers, and CLI examples: **`.sedea/centers/research-and-development/docs/development-process.md`** § *Plan metadata backfill (`backfill-prs-from-body`)*. Gate with **AskQuestion** before any non-dry-run run; then continue **Flow** from step 1.

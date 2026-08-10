@@ -50,8 +50,8 @@ inputs:
 laneRules:
   - ".sedea/centers/sedea/rules/2_ask-question-instructions.mdc"
   - ".sedea/centers/sedea/rules/4_mission.mdc"
-  - ".sedea/centers/software-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md"
-  - ".sedea/centers/software-development/missions/plan-and-deliver/skills/README.md"
+  - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md"
+  - ".sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md"
 warmUpRules:
   - ".sedea/centers/sedea/rules/2_ask-question-instructions.mdc"
   - ".sedea/centers/sedea/rules/4_mission.mdc"
@@ -98,8 +98,8 @@ Per [`.sedea/centers/sedea/docs/lane-manifest-contract.md`](.sedea/centers/sedea
 |------|---------|
 | `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice |
 | `.sedea/centers/sedea/rules/4_mission.mdc` | Mission spawn / terminal result |
-| `.sedea/centers/software-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md` | This skill procedure |
-| `.sedea/centers/software-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md` | This skill procedure |
+| `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md` | Spawn contracts, terminal stop |
 
 ## Agent messaging (MCP)
 
@@ -296,7 +296,7 @@ Call **`mission_control_present_structured_choice`** (`modalTitle`: *Release not
 
 1. Record `outputs.hostingFragmentPath` and the **repo-relative** path under hosting (for example `docs/release-notes/unreleased/YYYY-MM-DD-….md`).
 2. Emit **`mission_control_spawn_agent`** **once** with:
-   - **`skillPath`:** `.sedea/centers/software-development/missions/plan-and-deliver/skills/coding-session/SKILL.md`
+   - **`skillPath`:** `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/coding-session/SKILL.md`
    - **`slug`:** `release-note-fragment` (dispatch-unique; **do not** open a second fragment ship after merge-proven success)
    - **`name`:** `RN-Fragment PR ship` (rule **50** prefix shape)
    - **`description`:** Land hosting fragment PR for the approved unreleased note onto `origin/main`
@@ -382,7 +382,7 @@ Call MCP **`mission_control_send_agent_result`** exactly once at skill terminal 
 
 ## Completion (inline)
 
-**Not supported.** This skill is spawn-only. If invoked inline by mistake: stop; tell the invoker to spawn `.sedea/centers/software-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md` with slug `release-note` per the dissolve gate.
+**Not supported.** This skill is spawn-only. If invoked inline by mistake: stop; tell the invoker to spawn `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/capture-release-note/SKILL.md` with slug `release-note` per the dissolve gate.
 
 ## Anti-patterns (binding)
 
