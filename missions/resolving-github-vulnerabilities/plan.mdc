@@ -1,0 +1,214 @@
+---
+description: >-
+  Resolve GitHub vulnerability alerts with gh, apply recommended dependency
+  fixes per app backend/frontend README lockfile procedures, and ship via R&D
+  coding-session.
+alwaysApply: false
+---
+
+# Mission plan
+
+**Execution model:** Squad Leader inventories GitHub vulnerability alerts with **`gh`**, triages recommended fixes with the developer, applies (or plans) lockfile/code patches using **`app/backend/README.md`** and **`app/frontend/README.md`** vulnerability sections, then reuses plan-and-deliver **`new-plan`** / **`pr-plan`** / **`coding-session`** for hosting-repo ship when product changes are required. **Forbidden:** inventing patch procedures that contradict those READMEs; Squad Leader proposing dispatch resolution without documenting residual open alerts in scope.
+
+**Skill reuse:** [`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/`](.sedea/centers/research-and-development/missions/plan-and-deliver/skills/) — **`new-plan`**, **`pr-plan`**, **`coding-session`**, **`pr-review`**. Spawn contracts: [`.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md`](.sedea/centers/research-and-development/missions/plan-and-deliver/skills/README.md). Low-complexity single-PR patches may follow [quick-fix](.sedea/centers/research-and-development/missions/quick-fix/plan.mdc) constraints (complexity ≤6) when the developer confirms.
+
+## Mission constraints (binding)
+
+| Constraint | Rule |
+|------------|------|
+| **Inventory source** | Prefer **`gh`** (`gh api` / Dependabot / code-scanning / advisory surfaces available to the authenticated user) over manual guesswork |
+| **Patch procedures** | Backend transitive lock patches: [`app/backend/README.md`](../../../../../app/backend/README.md) § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: [`app/frontend/README.md`](../../../../../app/frontend/README.md) § *Vulnerability version patches directly in yarn.lock* |
+| **Target apps** | Default SafeBeat **`app/`** backend + frontend; other monorepo apps (`ucsf-study`, `demo-app`, …) only when the opening message or triage pick names them |
+| **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
+| **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
+| **Out of scope** | Rewriting Sedea center governance; closing GitHub alerts without verifying the fix; force-ignoring alerts without documented deferral |
+
+### Operations filesystem invariant (binding)
+
+All **`.sedea/operations/`** writes from the **main hosting clone** only — see [`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § **Operations persistence (main hosting root only)**.
+
+### Worktree removal ownership (binding)
+
+[`.sedea/centers/sedea/rules/0_hosting-repo.mdc`](.sedea/centers/sedea/rules/0_hosting-repo.mdc) § *Worktree ownership*; rule **20** in [`.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc`](.sedea/centers/research-and-development/rules/20_efficient-pr-shipping.mdc).
+
+### Post-PR review inheritance (binding)
+
+Detached **`coding-session`** ship chains reuse plan-and-deliver mechanics. After **`create-pr`**, the inline **`pr-review`** boundary from [plan-and-deliver/plan.mdc § Post-PR handoff](.sedea/centers/research-and-development/missions/plan-and-deliver/plan.mdc) applies. When the developer picks **`start-pr-review`**, load [plan-and-deliver `pr-review/SKILL.md`](.sedea/centers/research-and-development/missions/plan-and-deliver/skills/pr-review/SKILL.md).
+
+## Objectives
+
+1. **Inventory** — Using **`gh`**, list open vulnerability alerts (Dependabot, security advisories, and/or code scanning as available) for the scoped GitHub repo(s), including recommended fix versions when GitHub supplies them.
+2. **Triage** — With the developer, classify each in-scope alert: apply now, defer, or out-of-scope; record package ecosystem (Poetry backend vs Yarn frontend) and target path under the monorepo.
+3. **Remediate** — Apply approved patches following the backend/frontend README vulnerability procedures; for multi-file or higher-complexity work, plan and ship via **`new-plan`** → **`pr-plan`** → **`coding-session`**.
+4. **Verify and close** — Re-check alert status with **`gh`** after merge (or document residual risk); Squad Leader proposes dispatch resolution when in-scope items are fixed or explicitly deferred.
+
+## Squad operations
+
+```mermaid
+flowchart TB
+  classDef leader fill:#fef3c7,stroke:#d97706,color:#78350f
+  classDef child fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+  classDef detached fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+
+  CMD(["resolve github vulnerabilities"]):::leader
+  CMD --> INV["§2 Inventory via gh"]:::leader
+  INV --> TRI["§3 Triage"]:::leader
+  TRI --> REM["§4 Remediate / plan"]:::leader
+  REM --> PLAN["§5 new-plan + pr-plan"]:::child
+  PLAN --> CS["§6 coding-session ship"]:::detached
+  REM --> LED["§7 Leader ledger"]:::leader
+  LED --> RES["§8 Dispatch resolution"]:::leader
+```
+
+| Role | Lane | Runs |
+|------|------|------|
+| **Squad Leader** | Leader | §§1–4 inventory/triage/remediate orchestration; §7–§8 ledger and resolution |
+| **Planning child** | Child §5 | **`new-plan`** + **`pr-plan`** when a hosting-repo PR is required |
+| **Coding session** | Detached (from **`pr-plan`**) | Full **`coding-session`** ship chain |
+
+**Squad Leader `laneRules` (binding).**
+
+| Path | Role |
+|------|------|
+| `.sedea/centers/sedea/rules/2_ask-question-instructions.mdc` | Structured choice at USER_CHECKPOINT / external-wait |
+| `.sedea/centers/sedea/rules/4_mission.mdc` | Mission protocol, spawn/reload |
+| `.sedea/centers/research-and-development/missions/resolving-github-vulnerabilities/plan.mdc` | **This** mission plan |
+| `.sedea/centers/research-and-development/docs/development-process.md` | Cadence and protocol branches |
+
+**Dispatch display refresh (Squad Leader).** When dispatch scope is readable, call MCP **`mission_control_update_dispatch_display`** with non-empty **`dispatchTitle`** (≤64 chars) and optional **`dispatchDescription`** / **`dispatchHoverDescription`** (≤512 chars). **Skip** when chrome already matches. **Forbidden:** relabeling child slots from the leader; hand-editing **`dispatch-tab.v1.json`**. See [`.sedea/centers/sedea/rules/9_display-metadata-authority.mdc`](.sedea/centers/sedea/rules/9_display-metadata-authority.mdc).
+
+**Checkpoint trust (binding):** Auto-advance scripted substeps; structured choice only at **USER_CHECKPOINT** markers and **#external-wait** surfaces.
+
+## Checkpoint turn UX (mission protocol)
+
+| Protocol § | Checkpoint behavior | Gate |
+|------------|---------------------|------|
+| **§1** Open dispatch | Auto-advance when phrase matches | USER_CHECKPOINT on phrase mismatch |
+| **§2** Inventory | Auto-advance when `gh` succeeds | USER_CHECKPOINT on auth failure / empty scope pick |
+| **§3** Triage | **Gate** — developer confirms apply/defer set | USER_CHECKPOINT |
+| **§4** Remediate | Auto-advance README-aligned patches; spawn planning when PR needed | USER_CHECKPOINT when patch procedure unclear |
+| **§5** Planning child | **Waiting** after spawn | **#external-wait** |
+| **§6** Coding session | Off leader lane | — |
+| **§7** Ledger | Auto-advance while ship open | USER_CHECKPOINT pre-resolution |
+| **§8** Dispatch resolution | **Gate** when objectives allow | USER_CHECKPOINT |
+
+## Protocol
+
+### 1. Infer intent from the opening command phrase
+
+- **Type:** Branching logic
+- **Intent:** Match **`resolve github vulnerabilities`** and prepare inventory.
+- **Inputs:** Opening message; **`mission.yaml`** commands.
+- **Expected output:** Intent **`resolve-vulnerabilities`**; optional remainder (repo, ecosystem, alert ids).
+- **Next-step resolution:** Phrase matches → §2 (auto-advance). No match → USER_CHECKPOINT below.
+
+USER_CHECKPOINT — confirm mission intent when the opening command phrase does not match.
+
+**Procedure**
+
+1. Match **`resolve github vulnerabilities`** case-insensitively (longest phrase first per [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc)).
+2. When scope is readable from the remainder, run **Dispatch display refresh**.
+3. Strip the phrase; pass remainder as scope hint to §2.
+4. Continue to §2.
+
+### 2. Inventory vulnerabilities with `gh`
+
+- **Type:** Simple skill execution (leader inline)
+- **Intent:** Produce an alert inventory with recommended fixes where GitHub provides them.
+- **Inputs:** Scoped `owner/repo` (default: hosting repo remote); optional ecosystem filter from remainder.
+- **Expected output:** `alertList` (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, path hint).
+- **Next-step resolution:** Non-empty list or explicit empty-with-confirm → §3. Auth/tool failure → USER_CHECKPOINT below.
+
+USER_CHECKPOINT — recover `gh` auth or pick scoped repo when inventory cannot run.
+
+**Procedure**
+
+1. Resolve GitHub repo from `git remote` / opening remainder.
+2. Query alerts with **`gh`** (for example Dependabot alerts and code-scanning alerts APIs available to the token). Prefer machine-readable JSON.
+3. Map each alert to backend (Poetry / `app/backend`) vs frontend (Yarn / `app/frontend`) when the vulnerable package path indicates it; otherwise leave ecosystem TBD for §3.
+4. Summarize in **`displayMarkdown`** (or brief prose) and continue to §3.
+
+### 3. Triage with the developer
+
+- **Type:** Branching logic
+- **Intent:** Confirm which alerts to fix now vs defer.
+- **Inputs:** `alertList` from §2.
+- **Expected output:** `applySet`, `deferSet`, confirmed ecosystems and target README procedures.
+- **Next-step resolution:** Non-empty `applySet` → §4. All deferred / empty → §7–§8 with documented deferrals.
+
+USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguous).
+
+**Procedure**
+
+1. Present inventory with recommended fixes.
+2. Developer picks alerts to apply; confirm Poetry vs Yarn procedure per alert.
+3. Continue to §4 for `applySet`.
+
+### 4. Remediate per README procedures
+
+- **Type:** Branching logic
+- **Intent:** Apply approved patches or hand off to planning/ship.
+- **Inputs:** `applySet`; [`app/backend/README.md`](../../../../../app/backend/README.md); [`app/frontend/README.md`](../../../../../app/frontend/README.md).
+- **Expected output:** Applied lockfile/code changes on a hosting **`WORKTREE_ROOT`**, or spawn inputs for §5.
+- **Next-step resolution:** Small lockfile-only patch ready to plan/ship → §5. Procedure blocked → USER_CHECKPOINT below.
+
+USER_CHECKPOINT — choose how to proceed when README procedure fails or scope exceeds a single PR.
+
+**Binding patch procedures**
+
+**Backend (Poetry transitive lock patch)** — follow README exactly:
+
+1. `poetry add --lock <transitive-dependency>==<desired_version>`
+2. Remove the temporary direct dependency: `poetry remove <transitive-dependency>`
+
+**Frontend (Yarn lock patch)** — follow README exactly:
+
+1. Find the package version entry in `yarn.lock`.
+2. Leave the dependency reference line; update `version` and `resolution` to the desired version.
+3. Delete the `checksum` line.
+4. Run `yarn install --mode update-lockfile`.
+
+**Hosting-repo ship cadence:** Before tracked writes, run [worktree-setup](.sedea/centers/sedea/skills/worktree-setup/SKILL.md) when this pass has no **`WORKTREE_ROOT`**. Edits only under **`WORKTREE_ROOT`**.
+
+When complexity or blast radius warrants a formal PR plan (multiple packages, tests, or >6 complexity), continue to §5. When the developer already authorized a minimal single-PR path, still use §5 so **`coding-session`** owns the ship chain.
+
+### 5. Plan PR (spawn planning child)
+
+- **Type:** Agent engagement and handover
+- **execution:** `spawned`
+- **Intent:** Produce one PR plan for the approved vulnerability fixes.
+- **Skill:** `.sedea/centers/research-and-development/missions/plan-and-deliver/skills/new-plan/SKILL.md` then inline **`pr-plan`** (same pattern as quick-fix).
+- **Next-step resolution:** After spawn → **#external-wait** for child result; on success **`pr-plan`** spawns **`coding-session`** (§6).
+
+USER_CHECKPOINT — #external-wait after planning spawn (resume when child result arrives or on failure/partial).
+
+### 6. Coding session (detached)
+
+- **Type:** Agent engagement and handover (detached)
+- **Intent:** Implement and ship the vulnerability-fix PR.
+- **Skill:** plan-and-deliver **`coding-session`** (spawned from **`pr-plan`** §5d).
+- **Next-step resolution:** Leader tracks ship via §7; does **not** spawn **`coding-session`** directly.
+
+### 7. Leader ledger and pre-resolution
+
+- **Type:** Finish/stop logic
+- **Intent:** Track inventory, triage, and ship status; prepare resolution.
+- **Next-step resolution:** Ship complete or all deferred → §8. Ship still open → auto-advance ack only.
+
+USER_CHECKPOINT — pre-resolution checklist when proposing close while alerts or PRs remain.
+
+### 8. Dispatch resolution (Squad Leader)
+
+USER_CHECKPOINT — approve dispatch resolution when objectives are satisfied or the user signals closure.
+
+Call MCP **`mission_control_propose_dispatch_resolution`** with:
+
+```json
+{ "status": "<resolved|partial|aborted|abandoned>", "summary": "<short recap>" }
+```
+
+Use **`resolved`** when in-scope alerts are fixed or explicitly deferred with no open ship work; **`partial`** when a PR remains unmerged or alerts remain open by agreement. Re-propose after **Continue** on a prior resolution card when objectives are later satisfied.
+
+#### GitHub issue intake and lifecycle
+
+When this dispatch is linked to a GitHub issue, follow [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc) § **GitHub issue intake and lifecycle**.
