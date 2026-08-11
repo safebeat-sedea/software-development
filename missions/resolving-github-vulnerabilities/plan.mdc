@@ -21,6 +21,7 @@ alwaysApply: false
 | **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single repo only when the opening message or triage pick names one. |
 | **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
 | **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
+| **Vulnerability PR metadata** | When §5–§6 open a product-repo PR for this mission: **`--title`** must be `Vulnerabilities Fix - (YYYY-MM-DD)` (UTC calendar day of `gh pr create`). **`--body`** must be a markdown list of applied fixes as `package from -> to` (e.g. `aiohttp 5.1.2 -> 5.1.6`); optional one-line summary above the list. **Forbidden:** appending a “Made with Cursor” (or equivalent IDE) tag/footer; inventing titles that omit the date suffix. This mission binding **supersedes** generic `create-pr` past-tense title guidance for these PRs only. |
 | **Out of scope** | Rewriting Sedea center governance; closing GitHub alerts without verifying the fix; force-ignoring alerts without documented deferral |
 
 ### Operations filesystem invariant (binding)
@@ -179,6 +180,7 @@ When complexity or blast radius warrants a formal PR plan (multiple packages, te
 - **Intent:** Produce one PR plan for the approved vulnerability fixes.
 - **Skill:** `.sedea/centers/software-development/missions/plan-and-deliver/skills/new-plan/SKILL.md` then inline **`pr-plan`** (same pattern as quick-fix).
 - **Next-step resolution:** After spawn → **#external-wait** for child result; on success **`pr-plan`** spawns **`coding-session`** (§6).
+- **PR metadata handoff:** Include **`prTitle`** / **`prBody`** conventions from **Vulnerability PR metadata** in planning spawn inputs / initiating prompt so **`pr-plan`** and detached **`coding-session`** → inline **`create-pr`** use that title/body shape (not generic past-tense titles).
 
 USER_CHECKPOINT — #external-wait after planning spawn (resume when child result arrives or on failure/partial).
 
@@ -188,6 +190,7 @@ USER_CHECKPOINT — #external-wait after planning spawn (resume when child resul
 - **Intent:** Implement and ship the vulnerability-fix PR.
 - **Skill:** plan-and-deliver **`coding-session`** (spawned from **`pr-plan`** §5d).
 - **Next-step resolution:** Leader tracks ship via §7; does **not** spawn **`coding-session`** directly.
+- **PR create binding:** Before **`gh pr create`**, set **`--title`** and **`--body`** per **Vulnerability PR metadata**; strip any auto-appended Cursor/IDE footer from the body.
 
 ### 7. Leader ledger and pre-resolution
 
