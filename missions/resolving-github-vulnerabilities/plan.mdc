@@ -18,7 +18,7 @@ alwaysApply: false
 |------------|------|
 | **Inventory source** | Prefer **`gh`** (`gh api` / Dependabot / code-scanning / advisory surfaces available to the authenticated user) over manual guesswork |
 | **Patch procedures** | Backend transitive lock patches: each product repo’s `backend/README.md` § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: that repo’s `frontend/README.md` § *Vulnerability version patches directly in yarn.lock*. Apply under the scoped **`safebeat/app`** or **`safebeat/ucsf-study`** tree — **not** hosting-repo `app/` paths. |
-| **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single repo only when the opening message or triage pick names one. |
+| **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single product (and optional severity/package filter) via the §2 scope pick or a clear opening remainder — **do not** inventory both products by default when the developer has not chosen. |
 | **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
 | **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
 | **Vulnerability PR metadata** | When §5–§6 open a product-repo PR for this mission: **`--title`** must be `Vulnerabilities Fix - (YYYY-MM-DD)` (UTC calendar day of `gh pr create`). **`--body`** must be a markdown list of applied fixes as `package from -> to` (e.g. `aiohttp 5.1.2 -> 5.1.6`); optional one-line summary above the list. **Forbidden:** appending a “Made with Cursor” (or equivalent IDE) tag/footer; inventing titles that omit the date suffix. This mission binding **supersedes** generic `create-pr` past-tense title guidance for these PRs only. |
@@ -85,7 +85,7 @@ flowchart TB
 | Protocol § | Checkpoint behavior | Gate |
 |------------|---------------------|------|
 | **§1** Open dispatch | Auto-advance when phrase matches | USER_CHECKPOINT on phrase mismatch |
-| **§2** Inventory | Auto-advance when `gh` succeeds | USER_CHECKPOINT on auth failure / empty scope pick |
+| **§2** Inventory | Auto-advance when `gh` succeeds after scope is set | USER_CHECKPOINT scope pick (when opening remainder unclear); auth failure |
 | **§3** Triage | **Gate** — developer confirms apply/defer set | USER_CHECKPOINT |
 | **§4** Remediate | Auto-advance README-aligned patches; spawn planning when PR needed | USER_CHECKPOINT when patch procedure unclear |
 | **§5** Planning child | **Waiting** after spawn | **#external-wait** |
@@ -114,20 +114,35 @@ USER_CHECKPOINT — confirm mission intent when the opening command phrase does 
 
 ### 2. Inventory vulnerabilities with `gh`
 
-- **Type:** Simple skill execution (leader inline)
-- **Intent:** Produce an alert inventory with recommended fixes where GitHub provides them.
-- **Inputs:** Scoped `owner/repo` list from **Target apps** — default both **`safebeat/app`** and **`safebeat/ucsf-study`**; optional single-repo or ecosystem filter from opening remainder / structured pick. **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
-- **Expected output:** `alertList` (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, `owner/repo`, path hint inside that product repo).
-- **Next-step resolution:** Non-empty list or explicit empty-with-confirm → §3. Auth/tool failure → USER_CHECKPOINT below.
+- **Type:** Simple skill execution (leader inline) + branching gate
+- **Intent:** Lock remediation scope, then produce an alert inventory with recommended fixes where GitHub provides them.
+- **Inputs:** Opening remainder (optional); structured **scope pick** below; Target apps constraint (`safebeat/app`, `safebeat/ucsf-study` only). **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
+- **Expected output:** `scopeFilter` (`productRepo`, `ecosystems`, `severityPolicy`, optional `packageFilter` / `severityBand`); `alertList` filtered to that scope (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, `owner/repo`, path hint inside that product repo).
+- **Next-step resolution:** Scope confirmed + non-empty list (or explicit empty-with-confirm) → §3. Auth/tool failure → USER_CHECKPOINT (auth recover). Scope needs free-text → collect then inventory.
 
-USER_CHECKPOINT — recover `gh` auth or pick scoped repo when inventory cannot run.
+USER_CHECKPOINT — pick inventory / remediation scope before `gh` inventory (when opening remainder does not already name a clear filter).
+
+**Required options (then universal modal trailer per rule 2):**
+
+| Option id | Label |
+|-----------|-------|
+| `app-backend-frontend` | `safebeat/app` — backend + frontend (all severities) |
+| `ucsf-backend-frontend` | `safebeat/ucsf-study` — backend + frontend (all severities) |
+| `app-without-major` | `safebeat/app` — backend + frontend, **without major** (skip major severity / major-version bumps) |
+| `ucsf-without-major` | `safebeat/ucsf-study` — backend + frontend, **without major** |
+| `user-specified` | User-specified — e.g. only `aiohttp`, or only all **critical** |
+
+**On `user-specified`:** open a follow-up structured choice / prompt for package name(s) and/or severity band (`critical` / `high` / …); map to `packageFilter` and/or `severityBand`; then run inventory. **Do not** invent filters from silence.
+
+USER_CHECKPOINT — recover `gh` auth when inventory cannot run after scope is set.
 
 **Procedure**
 
-1. Resolve inventory repos: use opening remainder / structured pick when it names **`safebeat/app`** or **`safebeat/ucsf-study`**; otherwise inventory **both**. **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target.
-2. For each scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`.
-3. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §3. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
-4. Summarize in **`displayMarkdown`** (or brief prose) and continue to §3.
+1. If opening remainder already names a clear product + filter, map to `scopeFilter` and skip the scope-pick gate; otherwise open the scope pick above.
+2. Resolve inventory repo(s) from `scopeFilter.productRepo` only (`safebeat/app` or `safebeat/ucsf-study`). **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target. **Forbidden:** defaulting to inventory **both** product repos when the scope pick (or clear remainder) already selected one product.
+3. For the scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`. Apply `severityPolicy` / `packageFilter` / `severityBand` before §3 triage.
+4. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §3. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
+5. Summarize in **`displayMarkdown`** (or brief prose) and continue to §3.
 
 ### 3. Triage with the developer
 
