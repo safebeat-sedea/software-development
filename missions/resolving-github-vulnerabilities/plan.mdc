@@ -18,12 +18,12 @@ alwaysApply: false
 |------------|------|
 | **Inventory source** | Prefer **`gh`** (`gh api` / Dependabot / code-scanning / advisory surfaces available to the authenticated user) over manual guesswork |
 | **Patch procedures** | Backend transitive lock patches: each product repo’s `backend/README.md` § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: that repo’s `frontend/README.md` § *Vulnerability version patches directly in yarn.lock*. Apply under the scoped **`safebeat/app`** or **`safebeat/ucsf-study`** tree — **not** hosting-repo `app/` paths. |
-| **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single product (and optional severity/package filter) via the §2 scope pick or a clear opening remainder — **do not** inventory both products by default when the developer has not chosen. |
+| **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single product (and optional severity/package filter) via the §3 scope pick or a clear opening remainder — **do not** inventory both products by default when the developer has not chosen. |
 | **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
 | **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
-| **Vulnerability PR metadata** | When §7–§8 open a product-repo PR for this mission: **`--title`** must be `Vulnerabilities Fix - (YYYY-MM-DD)` (UTC calendar day of `gh pr create`). **`--body`** must be a markdown list of applied fixes as `package from -> to` (e.g. `aiohttp 5.1.2 -> 5.1.6`); optional one-line summary above the list. **Forbidden:** appending a “Made with Cursor” (or equivalent IDE) tag/footer; inventing titles that omit the date suffix. This mission binding **supersedes** generic `create-pr` past-tense title guidance for these PRs only. |
-| **Pre-PR re-check** | After fixes are applied and **before** `gh pr create`, re-run the same-scoped **`gh`** inventory (§5). **Forbidden:** opening the vulnerability PR while in-scope alerts remain open unless the developer explicitly deferred them this turn. |
-| **Pre-PR tests** | After §5 `proceed-to-pr` (or explicit residual deferral) and **before** `gh pr create`, run required product-repo tests for ecosystems touched by `applySet` (§6). **Forbidden:** opening the PR while required tests fail unless the developer explicitly waives in structured choice this turn. |
+| **Vulnerability PR metadata** | When §8–§9 open a product-repo PR for this mission: **`--title`** must be `Vulnerabilities Fix - (YYYY-MM-DD)` (UTC calendar day of `gh pr create`). **`--body`** must be a markdown list of applied fixes as `package from -> to` (e.g. `aiohttp 5.1.2 -> 5.1.6`); optional one-line summary above the list. **Forbidden:** appending a “Made with Cursor” (or equivalent IDE) tag/footer; inventing titles that omit the date suffix. This mission binding **supersedes** generic `create-pr` past-tense title guidance for these PRs only. |
+| **Pre-PR re-check** | After fixes are applied and **before** `gh pr create`, re-run the same-scoped **`gh`** inventory (§6). **Forbidden:** opening the vulnerability PR while in-scope alerts remain open unless the developer explicitly deferred them this turn. |
+| **Pre-PR tests** | After §6 `proceed-to-pr` (or explicit residual deferral) and **before** `gh pr create`, run required product-repo tests for ecosystems touched by `applySet` (§7). **Forbidden:** opening the PR while required tests fail unless the developer explicitly waives in structured choice this turn. |
 | **Out of scope** | Rewriting Sedea center governance; closing GitHub alerts without verifying the fix; force-ignoring alerts without documented deferral |
 
 ### Operations filesystem invariant (binding)
@@ -40,10 +40,11 @@ Detached **`coding-session`** ship chains reuse plan-and-deliver mechanics. Afte
 
 ## Objectives
 
-1. **Inventory** — Using **`gh`**, list open vulnerability alerts (Dependabot, security advisories, and/or code scanning as available) for the scoped GitHub repo(s), including recommended fix versions when GitHub supplies them.
-2. **Triage** — With the developer, classify each in-scope alert: apply now, defer, or out-of-scope; record package ecosystem (Poetry backend vs Yarn frontend) and target path under the monorepo.
-3. **Remediate** — Apply approved patches following the backend/frontend README vulnerability procedures; for multi-file or higher-complexity work, plan and ship via **`new-plan`** → **`pr-plan`** → **`coding-session`**.
-4. **Verify and close** — Re-check alerts with **`gh`** **after fixes and before opening the PR** (§5), run required product-repo **tests** (§6), then re-check after merge (or document residual risk); Squad Leader proposes dispatch resolution when in-scope items are fixed or explicitly deferred.
+1. **Branch** — At mission start, collect a product-repo **branch name** derived from the developer’s **ClickUp ticket** and carry it through remediation / ship.
+2. **Inventory** — Using **`gh`**, list open vulnerability alerts (Dependabot, security advisories, and/or code scanning as available) for the scoped GitHub repo(s), including recommended fix versions when GitHub supplies them.
+3. **Triage** — With the developer, classify each in-scope alert: apply now, defer, or out-of-scope; record package ecosystem (Poetry backend vs Yarn frontend) and target path under the monorepo.
+4. **Remediate** — Apply approved patches following the backend/frontend README vulnerability procedures; for multi-file or higher-complexity work, plan and ship via **`new-plan`** → **`pr-plan`** → **`coding-session`**.
+5. **Verify and close** — Re-check alerts with **`gh`** **after fixes and before opening the PR** (§6), run required product-repo **tests** (§7), then re-check after merge (or document residual risk); Squad Leader proposes dispatch resolution when in-scope items are fixed or explicitly deferred.
 
 ## Squad operations
 
@@ -54,22 +55,23 @@ flowchart TB
   classDef detached fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
 
   CMD(["resolve github vulnerabilities"]):::leader
-  CMD --> INV["§2 Inventory via gh"]:::leader
-  INV --> TRI["§3 Triage"]:::leader
-  TRI --> REM["§4 Remediate / plan"]:::leader
-  REM --> RECHECK["§5 Pre-PR re-check"]:::leader
-  RECHECK --> TESTS["§6 Pre-PR tests"]:::leader
-  TESTS --> PLAN["§7 new-plan + pr-plan"]:::child
-  PLAN --> CS["§8 coding-session ship"]:::detached
-  TESTS --> LED["§9 Leader ledger"]:::leader
-  LED --> RES["§10 Dispatch resolution"]:::leader
+  CMD --> BRANCH["§2 ClickUp branch name"]:::leader
+  BRANCH --> INV["§3 Inventory via gh"]:::leader
+  INV --> TRI["§4 Triage"]:::leader
+  TRI --> REM["§5 Remediate / plan"]:::leader
+  REM --> RECHECK["§6 Pre-PR re-check"]:::leader
+  RECHECK --> TESTS["§7 Pre-PR tests"]:::leader
+  TESTS --> PLAN["§8 new-plan + pr-plan"]:::child
+  PLAN --> CS["§9 coding-session ship"]:::detached
+  TESTS --> LED["§10 Leader ledger"]:::leader
+  LED --> RES["§11 Dispatch resolution"]:::leader
 ```
 
 | Role | Lane | Runs |
 |------|------|------|
-| **Squad Leader** | Leader | §§1–6 inventory/triage/remediate/pre-PR re-check/tests; §9–§10 ledger and resolution |
-| **Planning child** | Child §7 | **`new-plan`** + **`pr-plan`** when a product-repo PR is required |
-| **Coding session** | Detached (from **`pr-plan`**) | Full **`coding-session`** ship chain (must satisfy §5–§6 before `gh pr create` when patches land on that lane) |
+| **Squad Leader** | Leader | §§1–7 branch/inventory/triage/remediate/pre-PR re-check/tests; §10–§11 ledger and resolution |
+| **Planning child** | Child §8 | **`new-plan`** + **`pr-plan`** when a product-repo PR is required |
+| **Coding session** | Detached (from **`pr-plan`**) | Full **`coding-session`** ship chain (must satisfy §6–§7 before `gh pr create` when patches land on that lane) |
 
 **Squad Leader `laneRules` (binding).**
 
@@ -89,15 +91,16 @@ flowchart TB
 | Protocol § | Checkpoint behavior | Gate |
 |------------|---------------------|------|
 | **§1** Open dispatch | Auto-advance when phrase matches | USER_CHECKPOINT on phrase mismatch |
-| **§2** Inventory | Auto-advance when `gh` succeeds after scope is set | USER_CHECKPOINT scope pick (when opening remainder unclear); auth failure |
-| **§3** Triage | **Gate** — developer confirms apply/defer set | USER_CHECKPOINT |
-| **§4** Remediate | Auto-advance README-aligned patches; spawn planning when PR needed | USER_CHECKPOINT when patch procedure unclear |
-| **§5** Pre-PR re-check | Auto-advance when re-inventory is clean | USER_CHECKPOINT when missed/still-open in-scope alerts; auth failure |
-| **§6** Pre-PR tests | Auto-advance when required tests pass | USER_CHECKPOINT when tests fail or cannot run |
-| **§7** Planning child | **Waiting** after spawn | **#external-wait** |
-| **§8** Coding session | Off leader lane | — |
-| **§9** Ledger | Auto-advance while ship open | USER_CHECKPOINT pre-resolution |
-| **§10** Dispatch resolution | **Gate** when objectives allow | USER_CHECKPOINT |
+| **§2** ClickUp branch name | Auto-advance when ticket + `branchName` already clear | USER_CHECKPOINT collect/confirm when not clear |
+| **§3** Inventory | Auto-advance when `gh` succeeds after scope is set | USER_CHECKPOINT scope pick (when opening remainder unclear); auth failure |
+| **§4** Triage | **Gate** — developer confirms apply/defer set | USER_CHECKPOINT |
+| **§5** Remediate | Auto-advance README-aligned patches; spawn planning when PR needed | USER_CHECKPOINT when patch procedure unclear |
+| **§6** Pre-PR re-check | Auto-advance when re-inventory is clean | USER_CHECKPOINT when missed/still-open in-scope alerts; auth failure |
+| **§7** Pre-PR tests | Auto-advance when required tests pass | USER_CHECKPOINT when tests fail or cannot run |
+| **§8** Planning child | **Waiting** after spawn | **#external-wait** |
+| **§9** Coding session | Off leader lane | — |
+| **§10** Ledger | Auto-advance while ship open | USER_CHECKPOINT pre-resolution |
+| **§11** Dispatch resolution | **Gate** when objectives allow | USER_CHECKPOINT |
 
 ## Protocol
 
@@ -106,7 +109,7 @@ flowchart TB
 - **Type:** Branching logic
 - **Intent:** Match **`resolve github vulnerabilities`** and prepare inventory.
 - **Inputs:** Opening message; **`mission.yaml`** commands.
-- **Expected output:** Intent **`resolve-vulnerabilities`**; optional remainder (repo, ecosystem, alert ids).
+- **Expected output:** Intent **`resolve-vulnerabilities`**; optional remainder (repo, ecosystem, alert ids, ClickUp ticket / branch hint).
 - **Next-step resolution:** Phrase matches → §2 (auto-advance). No match → USER_CHECKPOINT below.
 
 USER_CHECKPOINT — confirm mission intent when the opening command phrase does not match.
@@ -115,16 +118,35 @@ USER_CHECKPOINT — confirm mission intent when the opening command phrase does 
 
 1. Match **`resolve github vulnerabilities`** case-insensitively (longest phrase first per [`.sedea/centers/sedea/rules/4_mission.mdc`](.sedea/centers/sedea/rules/4_mission.mdc)).
 2. When scope is readable from the remainder, run **Dispatch display refresh**.
-3. Strip the phrase; pass remainder as scope hint to §2.
+3. Strip the phrase; pass remainder as scope hint to §2–§3.
 4. Continue to §2.
 
-### 2. Inventory vulnerabilities with `gh`
+### 2. Collect ClickUp-derived branch name
+
+- **Type:** Branching logic
+- **Intent:** Before inventory/remediation, obtain a product-repo git **branch name** derived from the developer’s **ClickUp ticket** (ticket id + short slug).
+- **Inputs:** Opening message remainder (optional ClickUp id / branch hint); developer pick at the gate.
+- **Expected output:** `clickUpTicketId` (when known); `branchName` (git-safe branch name, e.g. `cu-12345-vuln-aiohttp` or the ticket’s agreed slug).
+- **Next-step resolution:** Confirmed `branchName` → §3 Inventory. Missing/invalid → stay at USER_CHECKPOINT below.
+
+USER_CHECKPOINT — collect ClickUp ticket and confirm derived branch name when not already clear from the opening message.
+
+**Procedure**
+
+1. Parse opening remainder for a ClickUp ticket id and/or explicit branch name.
+2. If neither is clear, open structured choice asking for the **ClickUp ticket** (id or URL) and a proposed **branch name** derived from it (developer may edit the proposal).
+3. Normalize `branchName` to a git-safe form (lowercase; non-alnum → `-`; no leading/trailing `-`). Reject empty names.
+4. Confirm `branchName` (and ticket id when present) in **`displayMarkdown`**, then continue.
+5. Carry `branchName` through §5–§9 (remediate / plan / coding-session) as the **product-repo** ship branch for this dispatch — do **not** invent a different branch name later unless the developer overrides at a later gate.
+6. Continue to §3.
+
+### 3. Inventory vulnerabilities with `gh`
 
 - **Type:** Simple skill execution (leader inline) + branching gate
 - **Intent:** Lock remediation scope, then produce an alert inventory with recommended fixes where GitHub provides them.
-- **Inputs:** Opening remainder (optional); structured **scope pick** below; Target apps constraint (`safebeat/app`, `safebeat/ucsf-study` only). **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
+- **Inputs:** Opening remainder (optional); `branchName` from §2; structured **scope pick** below; Target apps constraint (`safebeat/app`, `safebeat/ucsf-study` only). **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
 - **Expected output:** `scopeFilter` (`productRepo`, `ecosystems`, `severityPolicy`, optional `packageFilter` / `severityBand`); `alertList` filtered to that scope (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, `owner/repo`, path hint inside that product repo).
-- **Next-step resolution:** Scope confirmed + non-empty list (or explicit empty-with-confirm) → §3. Auth/tool failure → USER_CHECKPOINT (auth recover). Scope needs free-text → collect then inventory.
+- **Next-step resolution:** Scope confirmed + non-empty list (or explicit empty-with-confirm) → §4. Auth/tool failure → USER_CHECKPOINT (auth recover). Scope needs free-text → collect then inventory.
 
 USER_CHECKPOINT — pick inventory / remediation scope before `gh` inventory (when opening remainder does not already name a clear filter).
 
@@ -146,17 +168,17 @@ USER_CHECKPOINT — recover `gh` auth when inventory cannot run after scope is s
 
 1. If opening remainder already names a clear product + filter, map to `scopeFilter` and skip the scope-pick gate; otherwise open the scope pick above.
 2. Resolve inventory repo(s) from `scopeFilter.productRepo` only (`safebeat/app` or `safebeat/ucsf-study`). **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target. **Forbidden:** defaulting to inventory **both** product repos when the scope pick (or clear remainder) already selected one product.
-3. For the scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`. Apply `severityPolicy` / `packageFilter` / `severityBand` before §3 triage.
-4. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §3. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
-5. Summarize in **`displayMarkdown`** (or brief prose) and continue to §3.
+3. For the scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`. Apply `severityPolicy` / `packageFilter` / `severityBand` before §4 triage.
+4. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §4. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
+5. Summarize in **`displayMarkdown`** (or brief prose) and continue to §4.
 
-### 3. Triage with the developer
+### 4. Triage with the developer
 
 - **Type:** Branching logic
 - **Intent:** Confirm which alerts to fix now vs defer.
-- **Inputs:** `alertList` from §2.
+- **Inputs:** `alertList` from §3.
 - **Expected output:** `applySet`, `deferSet`, confirmed ecosystems and target README procedures.
-- **Next-step resolution:** Non-empty `applySet` → §4. All deferred / empty → §9–§10 with documented deferrals.
+- **Next-step resolution:** Non-empty `applySet` → §5. All deferred / empty → §10–§11 with documented deferrals.
 
 USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguous).
 
@@ -164,15 +186,15 @@ USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguo
 
 1. Present inventory with recommended fixes.
 2. Developer picks alerts to apply; confirm Poetry vs Yarn procedure per alert.
-3. Continue to §4 for `applySet`.
+3. Continue to §5 for `applySet`.
 
-### 4. Remediate per README procedures
+### 5. Remediate per README procedures
 
 - **Type:** Branching logic
 - **Intent:** Apply approved patches or hand off to planning/ship.
-- **Inputs:** `applySet`; for each alert’s `owner/repo`, that product repo’s `backend/README.md` and/or `frontend/README.md` vulnerability sections (see **Patch procedures**).
-- **Expected output:** Applied lockfile/code changes in a **product-repo** worktree for `safebeat/app` or `safebeat/ucsf-study`, or spawn inputs for §7 targeting that product repo. **Forbidden:** defaulting remediation writes to hosting-repo `app/` under **`HOSTING_ROOT`**.
-- **Next-step resolution:** Patches applied on the product branch → §5 Pre-PR re-check. Handoff to planning without local apply → §7 Plan PR (coding-session must still satisfy §5–§6 before `gh pr create`). Procedure blocked → USER_CHECKPOINT below.
+- **Inputs:** `applySet`; `branchName` from §2; for each alert’s `owner/repo`, that product repo’s `backend/README.md` and/or `frontend/README.md` vulnerability sections (see **Patch procedures**).
+- **Expected output:** Applied lockfile/code changes in a **product-repo** worktree for `safebeat/app` or `safebeat/ucsf-study` on **`branchName`**, or spawn inputs for §8 targeting that product repo and **`branchName`**. **Forbidden:** defaulting remediation writes to hosting-repo `app/` under **`HOSTING_ROOT`**; inventing a different product branch name when §2 already confirmed `branchName`.
+- **Next-step resolution:** Patches applied on the product branch → §6 Pre-PR re-check. Handoff to planning without local apply → §8 Plan PR (coding-session must still satisfy §6–§7 before `gh pr create`). Procedure blocked → USER_CHECKPOINT below.
 
 USER_CHECKPOINT — choose how to proceed when README procedure fails or scope exceeds a single PR.
 
@@ -190,20 +212,20 @@ USER_CHECKPOINT — choose how to proceed when README procedure fails or scope e
 3. Delete the `checksum` line.
 4. Run `yarn install --mode update-lockfile`.
 
-**Product-repo ship cadence:** Before tracked writes in `safebeat/app` or `safebeat/ucsf-study`, use that product repo’s worktree / ship flow via §7–§8 **`coding-session`** (same order as plan-and-deliver). **Forbidden:** treating hosting-repo **`WORKTREE_ROOT`** setup as the place to edit product lockfiles unless the developer explicitly scopes a hosting gitlink-only change.
+**Product-repo ship cadence:** Before tracked writes in `safebeat/app` or `safebeat/ucsf-study`, use that product repo’s worktree / ship flow via §8–§9 **`coding-session`** on **`branchName`** from §2 (same order as plan-and-deliver). **Forbidden:** treating hosting-repo **`WORKTREE_ROOT`** setup as the place to edit product lockfiles unless the developer explicitly scopes a hosting gitlink-only change.
 
-When complexity or blast radius warrants a formal PR plan (multiple packages, tests, or >6 complexity), continue toward §7 after §5–§6 when patches are already applied, or §7 directly when coding-session will apply patches. When the developer already authorized a minimal single-PR path, still use §7 so **`coding-session`** owns the ship chain.
+When complexity or blast radius warrants a formal PR plan (multiple packages, tests, or >6 complexity), continue toward §8 after §6–§7 when patches are already applied, or §8 directly when coding-session will apply patches. When the developer already authorized a minimal single-PR path, still use §8 so **`coding-session`** owns the ship chain.
 
-### 5. Pre-PR vulnerability re-check
+### 6. Pre-PR vulnerability re-check
 
 - **Type:** Simple skill execution (leader inline) + branching gate
 - **Intent:** After approved fixes are applied (lockfile/code on the product worktree / ship branch) and **before** opening the vulnerability PR, re-run the same-scoped **`gh`** inventory to catch alerts missed in the first pass or newly exposed by the patch set.
-- **Inputs:** `scopeFilter` from §2; `applySet` / applied patch ledger from §4; product `owner/repo`.
-- **Expected output:** `prePrAlertList` (same shape as §2 `alertList`); `missedInScope` (alerts still open that were not in `applySet` / `deferSet`, or still open after claimed fix); decision `proceed-to-pr` | `return-to-triage`.
+- **Inputs:** `scopeFilter` from §3; `applySet` / applied patch ledger from §5; product `owner/repo`; `branchName` from §2.
+- **Expected output:** `prePrAlertList` (same shape as §3 `alertList`); `missedInScope` (alerts still open that were not in `applySet` / `deferSet`, or still open after claimed fix); decision `proceed-to-pr` | `return-to-triage`.
 - **Next-step resolution:**
-  - No new in-scope open alerts (or only documented deferrals) → `proceed-to-pr` → §6 Pre-PR tests.
-  - New or still-open in-scope alerts → USER_CHECKPOINT → §3 triage (expand `applySet` / `deferSet`) then §4 again; **forbidden** to open the PR until re-check passes or developer explicitly defers remaining items.
-  - `gh` auth/tool failure → USER_CHECKPOINT auth recover (same pattern as §2).
+  - No new in-scope open alerts (or only documented deferrals) → `proceed-to-pr` → §7 Pre-PR tests.
+  - New or still-open in-scope alerts → USER_CHECKPOINT → §4 triage (expand `applySet` / `deferSet`) then §5 again; **forbidden** to open the PR until re-check passes or developer explicitly defers remaining items.
+  - `gh` auth/tool failure → USER_CHECKPOINT auth recover (same pattern as §3).
 
 USER_CHECKPOINT — when re-check finds missed or still-open in-scope alerts: return to triage vs defer residuals and proceed to PR.
 
@@ -211,20 +233,20 @@ USER_CHECKPOINT — recover `gh` auth when pre-PR re-check cannot run.
 
 **Procedure**
 
-1. Confirm remediations for the current ship slice are on the product branch (or document that §4 handed off without local apply and re-check runs after coding-session applies patches, still **before** `gh pr create`).
-2. Re-query alerts with **`gh`** using the same `scopeFilter` / product repo as §2. Prefer machine-readable JSON.
+1. Confirm remediations for the current ship slice are on the product branch **`branchName`** (or document that §5 handed off without local apply and re-check runs after coding-session applies patches, still **before** `gh pr create`).
+2. Re-query alerts with **`gh`** using the same `scopeFilter` / product repo as §3. Prefer machine-readable JSON.
 3. Diff against the prior inventory + triage sets: flag anything in-scope that is still open and was not explicitly deferred.
 4. Summarize in **`displayMarkdown`**: cleared vs still-open vs newly seen.
-5. If clean (or residuals explicitly deferred this turn) → set `proceed-to-pr` and continue to §6. Otherwise open the gate above — do **not** create the PR.
+5. If clean (or residuals explicitly deferred this turn) → set `proceed-to-pr` and continue to §7. Otherwise open the gate above — do **not** create the PR.
 
-### 6. Pre-PR tests
+### 7. Pre-PR tests
 
 - **Type:** Simple skill execution (leader inline or coding-session lane) + branching gate
-- **Intent:** After patches are on the product branch and §5 has `proceed-to-pr` (or residuals were explicitly deferred), run the **product-repo** test suite for ecosystems touched by `applySet` **before** `gh pr create`.
-- **Inputs:** `scopeFilter.productRepo` (`safebeat/app` | `safebeat/ucsf-study`); ecosystems in `applySet` (`poetry` / `yarn`); product worktree path where patches live.
+- **Intent:** After patches are on the product branch and §6 has `proceed-to-pr` (or residuals were explicitly deferred), run the **product-repo** test suite for ecosystems touched by `applySet` **before** `gh pr create`.
+- **Inputs:** `scopeFilter.productRepo` (`safebeat/app` | `safebeat/ucsf-study`); ecosystems in `applySet` (`poetry` / `yarn`); product worktree path where patches live; `branchName` from §2.
 - **Expected output:** `prePrTestReport` (commands run, exit codes, ecosystems covered); decision `tests-pass` | `tests-fail`.
 - **Next-step resolution:**
-  - `tests-pass` → §7 Plan PR / allow `gh pr create`.
+  - `tests-pass` → §8 Plan PR / allow `gh pr create`.
   - `tests-fail` or blocked env → USER_CHECKPOINT (fix / re-run / waive / defer ship) — **forbidden** to open the PR while required tests fail unless the developer explicitly waives in structured choice this turn.
 - **Command source (binding):** Prefer that product repo’s documented test entrypoints (backend/frontend README, package scripts, or CI workflow commands for the touched paths). **Forbidden:** inventing ad-hoc test commands that contradict those docs; running hosting-repo **`HOSTING_ROOT`** tests as a substitute for the product repo under remediation.
 
@@ -232,41 +254,42 @@ USER_CHECKPOINT — when required tests fail or cannot run: fix-and-retest vs wa
 
 **Procedure**
 
-1. Confirm §5 `proceed-to-pr` (or explicit residual deferral) is recorded for this ship slice.
+1. Confirm §6 `proceed-to-pr` (or explicit residual deferral) is recorded for this ship slice.
 2. Map `applySet` ecosystems to backend (Poetry) and/or frontend (Yarn) test roots **inside the product repo**.
 3. Run documented tests for each touched ecosystem; capture exit codes.
 4. Summarize in **`displayMarkdown`**.
-5. On all-required pass → `tests-pass` and continue to §7 (or allow `gh pr create` on the coding-session lane). On failure / blocked → open the gate above — do **not** create the PR.
+5. On all-required pass → `tests-pass` and continue to §8 (or allow `gh pr create` on the coding-session lane). On failure / blocked → open the gate above — do **not** create the PR.
 
-### 7. Plan PR (spawn planning child)
+### 8. Plan PR (spawn planning child)
 
 - **Type:** Agent engagement and handover
 - **execution:** `spawned`
 - **Intent:** Produce one PR plan for the approved vulnerability fixes.
 - **Skill:** `.sedea/centers/software-development/missions/plan-and-deliver/skills/new-plan/SKILL.md` then inline **`pr-plan`** (same pattern as quick-fix).
-- **Next-step resolution:** After spawn → **#external-wait** for child result; on success **`pr-plan`** spawns **`coding-session`** (§8).
-- **PR metadata handoff:** Include **`prTitle`** / **`prBody`** conventions from **Vulnerability PR metadata** in planning spawn inputs / initiating prompt so **`pr-plan`** and detached **`coding-session`** → inline **`create-pr`** use that title/body shape (not generic past-tense titles).
-- **Pre-PR gate handoff:** When §4 did not already produce `proceed-to-pr` / `tests-pass`, planning / coding-session must still run §5–§6 (or equivalent same-scope `gh` re-inventory + product-repo tests) before `gh pr create`.
+- **Next-step resolution:** After spawn → **#external-wait** for child result; on success **`pr-plan`** spawns **`coding-session`** (§9).
+- **PR metadata handoff:** Include **`prTitle`** / **`prBody`** conventions from **Vulnerability PR metadata** and **`branchName`** from §2 in planning spawn inputs / initiating prompt so **`pr-plan`** and detached **`coding-session`** → inline **`create-pr`** use that title/body shape and ship branch (not generic past-tense titles; not a invented branch name).
+- **Pre-PR gate handoff:** When §5 did not already produce `proceed-to-pr` / `tests-pass`, planning / coding-session must still run §6–§7 (or equivalent same-scope `gh` re-inventory + product-repo tests) before `gh pr create`.
 
 USER_CHECKPOINT — #external-wait after planning spawn (resume when child result arrives or on failure/partial).
 
-### 8. Coding session (detached)
+### 9. Coding session (detached)
 
 - **Type:** Agent engagement and handover (detached)
 - **Intent:** Implement and ship the vulnerability-fix PR.
 - **Skill:** plan-and-deliver **`coding-session`** (spawned from **`pr-plan`**).
-- **Next-step resolution:** Leader tracks ship via §9; does **not** spawn **`coding-session`** directly.
-- **PR create binding:** Before **`gh pr create`**, (1) confirm §5 `proceed-to-pr` (or run the §5 re-inventory on this lane after patches land), (2) confirm §6 `tests-pass` (or run §6 tests on this lane after patches land), (3) set **`--title`** and **`--body`** per **Vulnerability PR metadata**; strip any auto-appended Cursor/IDE footer from the body. **Forbidden:** creating the PR when in-scope alerts remain open without an explicit same-turn deferral, or when required tests fail without an explicit same-turn waiver.
+- **Next-step resolution:** Leader tracks ship via §10; does **not** spawn **`coding-session`** directly.
+- **Branch binding:** Use **`branchName`** from §2 as the product-repo ship branch unless the developer overrides at a later gate.
+- **PR create binding:** Before **`gh pr create`**, (1) confirm §6 `proceed-to-pr` (or run the §6 re-inventory on this lane after patches land), (2) confirm §7 `tests-pass` (or run §7 tests on this lane after patches land), (3) set **`--title`** and **`--body`** per **Vulnerability PR metadata**; strip any auto-appended Cursor/IDE footer from the body. **Forbidden:** creating the PR when in-scope alerts remain open without an explicit same-turn deferral, or when required tests fail without an explicit same-turn waiver.
 
-### 9. Leader ledger and pre-resolution
+### 10. Leader ledger and pre-resolution
 
 - **Type:** Finish/stop logic
-- **Intent:** Track inventory, triage, pre-PR re-check, pre-PR tests, and ship status; prepare resolution.
-- **Next-step resolution:** Ship complete or all deferred → §10. Ship still open → auto-advance ack only.
+- **Intent:** Track ClickUp branch, inventory, triage, pre-PR re-check, pre-PR tests, and ship status; prepare resolution.
+- **Next-step resolution:** Ship complete or all deferred → §11. Ship still open → auto-advance ack only.
 
 USER_CHECKPOINT — pre-resolution checklist when proposing close while alerts or PRs remain.
 
-### 10. Dispatch resolution (Squad Leader)
+### 11. Dispatch resolution (Squad Leader)
 
 USER_CHECKPOINT — approve dispatch resolution when objectives are satisfied or the user signals closure.
 
