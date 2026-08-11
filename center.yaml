@@ -87,6 +87,16 @@ missions:
       - missions/plan-and-deliver/skills/new-plan/SKILL.md
       - missions/plan-and-deliver/skills/pr-plan/SKILL.md
       - missions/plan-and-deliver/skills/pre-pr-review/SKILL.md
+  - slug: resolving-github-vulnerabilities
+    plan: missions/resolving-github-vulnerabilities/plan.mdc
+    skills: missions/resolving-github-vulnerabilities/skills/
+    commands:
+      - resolve github vulnerabilities
+    skillEntries:
+      - missions/plan-and-deliver/skills/new-plan/SKILL.md
+      - missions/plan-and-deliver/skills/pr-plan/SKILL.md
+      - missions/plan-and-deliver/skills/coding-session/SKILL.md
+      - missions/plan-and-deliver/skills/pr-review/SKILL.md
 
 centerSkills:
   readme: missions/plan-and-deliver/skills/README.md
