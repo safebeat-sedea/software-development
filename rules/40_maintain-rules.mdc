@@ -13,7 +13,7 @@ alwaysApply: false
 
 This file lives under **`.sedea/centers/software-development/rules/`** and is **`alwaysApply: false`** (SD §5.4 on-demand flip). It does **not** author Sedea center governance under **`.sedea/centers/<centerSlug>/`**.
 
-**Apply the procedures in this document only** when the task changes **hosting-repo** navigation or codebase conventions in **`.cursor/rules/*.mdc`** on the repo that ships code (the active **hosting repo** or a **hosting repo worktree**). For R&D delivery process, edit **`.sedea/centers/software-development/rules/*.mdc`** and mission assets via **`improve center rules`** / **`improve mission`** — not via this file’s edit loop alone.
+**Apply the procedures in this document only** when the task changes **hosting-repo** navigation or codebase conventions in **`.cursor/rules/*.mdc`** on the repo that ships code (the active **hosting repo** or a **hosting repo worktree**). For Software Development delivery process, edit **`.sedea/centers/software-development/rules/*.mdc`** and mission assets via **`improve center rules`** / **`improve mission`** — not via this file’s edit loop alone.
 
 ## Scope
 
@@ -65,7 +65,7 @@ When a hosting-repo **`.cursor/rules/*.mdc`** file documents **git worktrees**, 
 
 ## Git and worktree docs in center rules and skills
 
-When **any** file under **`.sedea/centers/<centerSlug>/`** (center **`rules/`**, mission **`plan.mdc`**, **`SKILL.md`**, or center **`docs/`**) mentions **`git worktree add`**, **`git worktree remove`**, **`git worktree prune`**, **`sedea_add_worktree_folder`**, **`sedea_remove_worktree_folder`**, post-merge cleanup, or **`git worktree list`**, it **must** include a **Worktree removal ownership (binding)** block (or equivalent normative one-liner): **do not remove worktrees you do not own**; **`git worktree list` is read-only** unless rule **0** § *Worktree ownership* preconditions hold for **that** path. Link rule **0** § *Worktree ownership* and, for R&D ship lanes, rule **20** § *Worktree removal ownership (binding)*. **Forbidden:** instructing agents to “clean up” or prune every worktree on the repo. **If ownership is unsure:** **stop** and use structured choice — **do not remove**, and **do not** end with prose-only idle.
+When **any** file under **`.sedea/centers/<centerSlug>/`** (center **`rules/`**, mission **`plan.mdc`**, **`SKILL.md`**, or center **`docs/`**) mentions **`git worktree add`**, **`git worktree remove`**, **`git worktree prune`**, **`sedea_add_worktree_folder`**, **`sedea_remove_worktree_folder`**, post-merge cleanup, or **`git worktree list`**, it **must** include a **Worktree removal ownership (binding)** block (or equivalent normative one-liner): **do not remove worktrees you do not own**; **`git worktree list` is read-only** unless rule **0** § *Worktree ownership* preconditions hold for **that** path. Link rule **0** § *Worktree ownership* and, for Software Development ship lanes, rule **20** § *Worktree removal ownership (binding)*. **Forbidden:** instructing agents to “clean up” or prune every worktree on the repo. **If ownership is unsure:** **stop** and use structured choice — **do not remove**, and **do not** end with prose-only idle.
 
 ## Checkpoint step continuation (binding)
 
