@@ -382,10 +382,6 @@ Here is a summary of the changes as a starting point for the PR description (ver
 
 ## How to verify
 (pointers)
-
-Also include when applicable:
-- Not in this PR (deferrals, parent scope left out on purpose)
-- Plan lineage: path or slug to `.sedea/operations/**/plans/<slug>.plan.md`
 ```
 
 ## Result contract
