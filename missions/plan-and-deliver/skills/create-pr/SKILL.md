@@ -78,13 +78,13 @@ If Mission Control opened a session whose only intent is **`create-pr`** / *open
 
 **Required upstream context:** `prePrReviewRecommendation: "go"`; `worktreePath`, `worktreeName`, `baseRef`; optional `targetPlanPath` / `targetPlanSlug`; `diffSummary` and pre-PR flags when available. If context is missing, recover on **`coding-session`** before running this procedure.
 
-**Post-PR lifecycle:** merge checks, After-deploy **`deploy-walk`**, and inline **`plan-reconcile`** are owned by **`coding-session`** ([Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate), [After deploy deploy-walk handoff](../coding-session/SKILL.md#after-deploy-deploy-walk-handoff), [Plan-reconcile handoff (inline)](../coding-session/SKILL.md#plan-reconcile-handoff-inline)) — not this skill. **`gh pr create`** is the only `gh` operation this skill owns; after the PR exists, generic **`gh`** PR inspection is **not** a substitute for inline **`pr-review`** and **`pr-review.mjs`** Step 1 on **`coding-session`**.
+**Post-PR lifecycle:** merge checks, After-deploy **`deploy-walk`**, and inline **`plan-reconcile`** are owned by **`coding-session`** ([Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate), [After deploy deploy-walk handoff](../coding-session/SKILL.md#after-deploy-deploy-walk-handoff), [Plan-reconcile handoff (inline)](../coding-session/SKILL.md#plan-reconcile-handoff-inline)) — not this skill. This skill owns **`gh pr create`** (minimal open) and **`gh pr edit`** (post-open body fill per [Post-open body fill (binding)](#post-open-body-fill-binding)); generic **`gh`** PR inspection is **not** a substitute for inline **`pr-review`** and **`pr-review.mjs`** Step 1 on **`coding-session`**.
 
 **Worktree removal ownership (binding).** **Do not remove worktrees you do not own.** Opening a PR does **not** grant cleanup on other worktrees. **`git worktree remove`**, **`git worktree prune`**, and **`sedea_remove_worktree_folder`** apply **only** to **this pass’s** **`WORKTREE_ROOT`** when rule **0** § *Worktree ownership* and rule **20** § *Worktree removal ownership (binding)* preconditions hold. **`git worktree list` is read-only** when ownership is unclear — **stop; do not remove**.
 
 ## Structured choice (Mission Control)
 
-Gates use **AskQuestion**, **`mission_control_present_structured_choice`** per **`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`** and **`../README.md`** § *Recap, structured choice, act* on the **`coding-session`** lane — **preferred:** recap + modal in one message. **Act** (`gh pr create`, plan follow-up append) only after the developer selects.
+Gates use **AskQuestion**, **`mission_control_present_structured_choice`** per **`.sedea/centers/sedea/rules/2_ask-question-instructions.mdc`** and **`../README.md`** § *Recap, structured choice, act* on the **`coding-session`** lane — **preferred:** recap + modal in one message. **Act** (`gh pr create`, post-open **`gh pr edit`**, plan follow-up append) only after the developer selects.
 
 ## Checkpoint turn UX (skill-local)
 
@@ -98,14 +98,14 @@ Marker syntax: [`.sedea/centers/sedea/docs/user-checkpoint-marker-syntax.md`](.s
 
 ### Developer input vs external-wait (Checkpoint)
 
-Under Checkpoint trust, **happy-path** inline steps ([Gate](#gate) validation **1–4**, push when pre-authorized, [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) → **`gh pr create`** on the **same** turn) **auto-advance without a turn-end modal**. **Developer-input** surfaces below are **USER_CHECKPOINT** — **not** rule **2** external-wait.
+Under Checkpoint trust, **happy-path** inline steps ([Gate](#gate) validation **1–4**, push when pre-authorized, [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) → **`gh pr create`** + post-open **`gh pr edit`** on the **same** turn) **auto-advance without a turn-end modal**. **Developer-input** surfaces below are **USER_CHECKPOINT** — **not** rule **2** external-wait.
 
 | Situation | Normative gate / owner |
 |-----------|------------------------|
 | Branch not on remote; push not pre-authorized | [Push authorization gate](#push-authorization-gate-binding) — **this skill** |
 | Pre-PR clean; push satisfied; Checkpoint auto-advance criteria pass | [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) — **no** Pre-gh modal |
 | Pre-gh needed (non-Checkpoint, push unauthorized, defer/revise/emit-prompt, or follow-up append unresolved) | [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) — **this skill** (exception / non-Checkpoint only) |
-| **`gh pr create`** succeeded — next ship action | [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) — **`coding-session`** same turn — **not** this skill |
+| **`gh pr create`** + post-open fill succeeded — next ship action | [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) — **`coding-session`** same turn — **not** this skill |
 | Developer returns after GitHub review / idle open PR | **`coding-session`** post-create-pr or **`pr-review`** disposition — developer-input |
 
 **Forbidden:** prose-only PR URL, *review on GitHub*, *tell me when*, *come back when*, *waiting for PR review*, or *I'll open the PR* without **`mission_control_present_structured_choice`** at [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) (when that gate applies) or without handing off to **`coding-session`** [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) on the **same turn** **`gh pr create`** completes. **Forbidden:** treating GitHub CI/check completion or third-party reviewer activity as **external-wait** that skips the post-create-pr modal — **lane continuation** requires a developer pick on **`coding-session`**. **Forbidden on Checkpoint clean path:** opening Pre-gh / *Create the pull request now?* when [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) criteria pass.
@@ -117,7 +117,7 @@ Under Checkpoint trust, **happy-path** inline steps ([Gate](#gate) validation **
 | **Pre-PR clean path** — validate `prePrReviewRecommendation`, worktree context, branch ref, committed diff ([Gate](#gate) steps **1–4**) | Auto-advance when inputs valid | exception: validation failure → stop with recap; do not call **`gh pr create`** |
 | **Push authorization** — branch on remote or push pre-authorized | Auto-advance when remote has commits or **`coding-session`** already pushed on clean-**go** auto path | **Gate** when push is required but not authorized — [Push authorization gate](#push-authorization-gate-binding) |
 | **Pre-gh authorization** — developer pick before **`gh pr create`** | **Auto-advance** — **`authorize-create-pr`** or **`approve-followups-create-pr`** when [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) criteria pass | **Gate** when push unauthorized, developer named defer/revise/emit-prompt, or follow-up append unresolved — [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) |
-| **`gh pr create`** + PR description | Auto-advance on the **same** turn after implicit authorize pick (Checkpoint) or on the **next** response turn after modal pick (non-Checkpoint) | exception: `gh` failure → recap + re-open pre-gh gate |
+| **`gh pr create`** + post-open **`gh pr edit`** | Auto-advance on the **same** turn after implicit authorize pick (Checkpoint) or on the **next** response turn after modal pick (non-Checkpoint) | exception: `gh` failure → recap + re-open pre-gh gate |
 | **`## Completion (inline)`** handback | Parent opens [Post-create-pr handoff gate](../coding-session/SKILL.md#post-create-pr-handoff-gate) with **`mission_control_present_structured_choice`** same turn — Checkpoint and non-Checkpoint | — |
 | **PR prompt fallback** | Auto-advance when developer picks emit prompt or push/creation remains unauthorized | — |
 
@@ -178,7 +178,7 @@ Under Checkpoint trust, when **`coding-session`** loads this skill after **`pre-
 | No proposed follow-ups / `followUpsAppended: false` | **`authorize-create-pr`** |
 | Follow-ups approved for append | **`approve-followups-create-pr`** |
 
-When clean: one-line recap (reviewer **`go`**, branch pushed, PR opening), run **`gh pr create`** on the **same** turn, merge [## Completion (inline)](#completion-inline) — **forbidden:** *Coding session — create PR* modal or *Create the pull request now?* structured choice on this path.
+When clean: one-line recap (reviewer **`go`**, branch pushed, PR opening), run **`gh pr create`** → post-open **`gh pr edit`** on the **same** turn, merge [## Completion (inline)](#completion-inline) — **forbidden:** *Coding session — create PR* modal or *Create the pull request now?* structured choice on this path.
 
 **Exception — gate required:** When Checkpoint does not apply, push is unauthorized, validation fails, or the developer named defer/revise/emit-prompt, emit the modal below.
 
@@ -207,9 +207,9 @@ USER_CHECKPOINT — authorize `gh pr create` on this lane.
 
 **Standalone dispatch:** When [Standalone dispatch (stop immediately)](#standalone-dispatch-stop-immediately) applies, **skip** this gate — stop before **`gh`**.
 
-## Relationship to rule 20 (`gh pr create`)
+## Relationship to rule 20 (`gh pr create` / `gh pr edit`)
 
-**`.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc`** forbids **`gh pr create`** on planning, Squad Leader, **`pre-pr-review`**, and other non-ship lanes. **Exception:** the active **`coding-session`** agent **while executing this skill inline** after pre-PR clean **`go`** (auto path) or exceptional Create-PR gate may call `gh pr create` when gates pass and push/creation is authorized.
+**`.sedea/centers/software-development/rules/20_efficient-pr-shipping.mdc`** forbids **`gh pr create`** on planning, Squad Leader, **`pre-pr-review`**, and other non-ship lanes. **Exception:** the active **`coding-session`** agent **while executing this skill inline** after pre-PR clean **`go`** (auto path) or exceptional Create-PR gate may call **`gh pr create`** when gates pass and push/creation is authorized, then **`gh pr edit`** for [Post-open body fill (binding)](#post-open-body-fill-binding) on the **same** authorized turn (Checkpoint clean path).
 
 ## Gate
 
@@ -223,53 +223,52 @@ Before creating or preparing a PR (Checkpoint: see [Checkpoint turn UX (skill-lo
 
 When pre-PR validation and push preconditions pass:
 
-- **Checkpoint trust** — when [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) criteria pass, run **`gh pr create`** on the **same** turn (implicit **`authorize-create-pr`** / **`approve-followups-create-pr`**). **Forbidden:** opening [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) on the clean path.
+- **Checkpoint trust** — when [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) criteria pass, run **`gh pr create`** → post-open **`gh pr edit`** on the **same** turn (implicit **`authorize-create-pr`** / **`approve-followups-create-pr`**). **Forbidden:** opening [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) on the clean path.
 - **Non-Checkpoint or exception** — open [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) before **`gh pr create`**. When the developer authorizes creation, run `gh pr create` on the **response turn** — not the same turn as the modal.
 
 If creation is not authorized, produce the PR prompt below and set `continuationStatus: "active"` — do not call `gh pr create`.
 
 ## PR body assembly (binding)
 
-Agent-authored PR bodies **must** use the canonical heading scaffold below — the **coding-agent skill surface** for Reason/Justification (PRD §5.1 / §5.6 layer B). Do **not** rely on product-repo `pull_request_template.md` files for agent-opened PRs; **`create-pr`** owns body assembly on this lane.
+Agent-authored PR bodies use the **PR #93 narrative scaffold** below — the proven filled-body shape for Sedea agent-opened PRs ([safebeat/app#93](https://github.com/safebeat/app/pull/93)). **`create-pr`** owns assembly on this lane; do **not** rely on product-repo `pull_request_template.md` pre-fill for agent-opened PRs (human GitHub compose may still use Reason/Justification template headings from the MVP template PR).
 
-### Heading scaffold
+**Post-open fill (binding):** Assemble the full body **after** the PR exists — apply via **`gh pr edit`** per [Post-open body fill (binding)](#post-open-body-fill-binding). **`gh pr create`** uses a **minimal placeholder** body only; the **final** PR description must match this scaffold before [## Completion (inline)](#completion-inline).
 
-Assemble **`--body`** markdown in this order:
+**Semantic alignment (PRD):** **Summary** + **Why** carry Reason-for-change intent; **What changed** + **How to verify** carry scope and verification. Product-repo template headings (Reason for change, Justification, …) are the **human UI contract** — agent bodies use the PR #93 section names unless the developer explicitly requests template-heading output.
+
+### Heading scaffold (PR #93 exemplar)
+
+Assemble markdown for **`gh pr edit --body`** in this order:
 
 ```markdown
-## Reason for change
+## Summary
 
-<!-- One primary driver — pick the best-fit category and expand in 1–3 sentences. -->
+<!-- One short paragraph — what this PR does. -->
 
-- [ ] Customer request / support ticket
-- [ ] Security / vulnerability
-- [ ] Performance / scalability
-- [ ] Bug fix / defect
-- [ ] Compliance / QMS / regulatory
-- [ ] Feature / product requirement
-- [ ] Tech debt / maintainability (name the outcome — not "refactor")
-- [ ] Other: ___
+## Why
 
-**Summary:** _Why is this change being made now? Link ticket/VER/PM item when applicable._
-
-## Justification
-
-<!-- Why is this change acceptable to merge? -->
-
-- **User / field impact:** _Who or what is affected? New/changed fields, defaults, UX, or runtime behavior._
-- **Documentation impact:** _Link, repo path, or `none` — do not invent._
-- **Risk & rollback:** _What could go wrong; how to revert or mitigate._
+<!-- Motivation: why now, how it fits the larger goal. Enough to judge intent vs. mistake. -->
 
 ## What changed
 
-<!-- Behaviour, APIs, schema, config — proportional to PR size. -->
+<!-- Behaviour, APIs, schema, config — proportional to PR size; align with diff. -->
 
-## Verification
+## Not in this PR
+
+<!-- Deferrals, follow-ups, parent scope left out on purpose — omit section when none. -->
+
+## Plan lineage
+
+<!-- When plan-anchored: slug @ path (e.g. `.sedea/operations/**/plans/<slug>.plan.md`). Omit when N/A. -->
+
+## How to verify
 
 <!-- How to confirm — tests, monitors, manual steps. Pointer only; no separate test-plan essay. -->
 ```
 
-**Forbidden:** empty sections; placeholder-only bodies; parallel section names that duplicate this scaffold (for example a separate “Why this slice” block **and** Reason for change with conflicting content).
+**Reference exemplar:** [safebeat/app#93](https://github.com/safebeat/app/pull/93) — filled agent PR before product-template MVP; match this **section order and narrative density**, scaled to PR size.
+
+**Forbidden:** empty **Summary** / **Why** / **What changed** / **How to verify** in the **final** body after post-open fill; leaving the create-time placeholder without **`gh pr edit`**; duplicating content under parallel headings (for example **Summary** and a separate **Reason for change** block with conflicting prose).
 
 ### Plan → body mapping (plan-anchored)
 
@@ -277,10 +276,12 @@ When **`targetPlanPath`** resolves, read the PR plan and map:
 
 | Body heading | Plan source | Notes |
 |--------------|-------------|--------|
-| **Reason for change** — driver + **Summary** | §2 Background; §4 Reasoning (motivation) | Pick **one** primary driver checkbox; mark `[x]` in the emitted body |
-| **Justification** | §4 Reasoning; rule **10** Benefit; §3 Change scope (impact) | User/field impact from scope; docs from plan or infer `"none"` only with evidence |
-| **What changed** | §3 Change scope; diff | Align with committed diff |
-| **Verification** | §6 Tests; §7 deploy pointers | Pointer to tests or §7 steps — not a full deploy essay |
+| **Summary** | §1 overview / §3 Change scope (one line) + diff headline | Short paragraph |
+| **Why** | §2 Background; §4 Reasoning (motivation) | Merge acceptability cues from §4 / rule **10** Benefit inline when brief |
+| **What changed** | §3 Change scope; diff | Bullets aligned with committed diff |
+| **Not in this PR** | Plan deferrals; parent scope omitted | Omit section when empty |
+| **Plan lineage** | `targetPlanSlug` + `targetPlanPath` | One line: `slug` @ path |
+| **How to verify** | §6 Tests; §7 deploy pointers | Pointer only — not a deploy essay |
 
 When **not** plan-anchored, derive from diff + session context; open [Ask-when-needed gate](#ask-when-needed-gate-binding) when required fields are missing or uncertain.
 
@@ -298,13 +299,13 @@ USER_CHECKPOINT — provide missing or uncertain PR template fields.
 
 | Option id | Label (brief) | Act |
 |-----------|---------------|-----|
-| `provide-pr-template-fields` | Provide missing or uncertain fields | Developer supplies values; re-assemble body; then continue to **`gh pr create`** when complete |
+| `provide-pr-template-fields` | Provide missing or uncertain fields | Developer supplies values; then continue **`gh pr create`** → post-open **`gh pr edit`** when complete |
 | `defer-pr` | Defer PR — fill plan first | `continuationStatus: "active"`; no **`gh pr create`** |
 | `more-details` | More details for option _ | Elaborate; re-open gate |
 
-**Forbidden:** `gh pr create` with empty Reason/Justification; inventing driver category or doc impact; prompting when plan + diff supply unambiguous values; opening **`gh pr create`** without developer authorization at [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) or explicit **`authorize-create-pr`** pick (Checkpoint exception path only when criteria pass **and** developer did not defer PR creation in the **same** message).
+**Forbidden:** completing [## Completion (inline)](#completion-inline) with empty **Summary** / **Why** / **What changed** in the **final** PR body; inventing motivation or scope; prompting when plan + diff supply unambiguous values; opening **`gh pr create`** without developer authorization at [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) or explicit **`authorize-create-pr`** pick (Checkpoint exception path only when criteria pass **and** developer did not defer PR creation in the **same** message).
 
-**Checkpoint — auto-fill (binding):** When plan-anchored mapping is complete and ask-when-needed triggers are **false**, assemble the body and proceed to **`gh pr create`** on the authorized path without this modal.
+**Checkpoint — auto-fill (binding):** When plan-anchored mapping is complete and ask-when-needed triggers are **false**, run **`gh pr create`** (placeholder body) → assemble scaffold → **`gh pr edit`** on the **same** authorized turn without this modal.
 
 ## `gh pr create` procedure (binding)
 
@@ -312,22 +313,37 @@ When authorized to open the PR ([Gate](#gate), [Checkpoint — auto-advance `aut
 
 1. **Derive PR base branch** — From inline **`baseRef`** (e.g. `origin/main`): strip a leading `origin/` prefix → **`<prBaseBranch>`** (e.g. `main`). When **`baseRef`** uses another remote prefix, strip that remote name and `/` only.
 2. **Pre-create self-check** — `gh api repos/{owner}/{repo} --jq .default_branch`. When the result ≠ **`<prBaseBranch>`**, **`--base` is mandatory** (always safe to pass even when equal).
-3. **Assemble body** — Run [PR body assembly (binding)](#pr-body-assembly-binding); pass [Ask-when-needed gate](#ask-when-needed-gate-binding) when required. **Forbidden:** skip assembly and reuse legacy rule **20** bullet-only starters without Reason/Justification headings.
-4. **Create PR** — From **`worktreePath`**:
+3. **Resolve body mapping** — Run [PR body assembly (binding)](#pr-body-assembly-binding) § *Plan → body mapping*; pass [Ask-when-needed gate](#ask-when-needed-gate-binding) when required. Confirm inferable fields **before** create — **do not** pass the full scaffold to **`--body`** at create time. **Forbidden:** skip mapping validation; shipping placeholder-only as final body.
+4. **Create PR (minimal body)** — From **`worktreePath`**:
 
 ```bash
 gh pr create \
   --base "<prBaseBranch>" \
   --head "<worktreeName>" \
   --title "<title>" \
-  --body "<body>"
+  --body "_Opening PR — full description follows._"
 ```
 
-Body per [PR body assembly (binding)](#pr-body-assembly-binding) — same Reason / Justification / What changed / Verification scaffold.
+5. **Post-open fill (same turn when authorized)** — Immediately run [Post-open body fill (binding)](#post-open-body-fill-binding). **Forbidden:** hand back to **`coding-session`** with placeholder-only body on Checkpoint clean path.
 
-5. **Forbidden:** bare **`gh pr create`** without **`--base`** — GitHub repository **`default_branch`** may differ on fork layouts.
+6. **Forbidden:** bare **`gh pr create`** without **`--base`** — GitHub repository **`default_branch`** may differ on fork layouts.
 
 Cross-ref: rule **20** § *Hosting-repo PR base branch (binding)*. **Center-repo PRs:** [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Center-repo worktree procedure*; **`development-process.md`** § *Center-repo PR base (binding)*.
+
+## Post-open body fill (binding)
+
+After **`gh pr create`** returns **`prNumber`** / **`prUrl`**:
+
+1. **Assemble full body** — Build markdown per [PR body assembly (binding)](#pr-body-assembly-binding) § *Heading scaffold (PR #93 exemplar)* from plan, diff, and session.
+2. **Apply body** — From **`worktreePath`**:
+
+```bash
+gh pr edit <prNumber> --body "<assembled-body>"
+```
+
+3. **Self-check** — `gh pr view <prNumber> --json body` — confirm **Summary**, **Why**, and **What changed** are populated in the live PR.
+4. **Checkpoint clean path** — run steps **1–3** on the **same** turn as **`gh pr create`** when [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding) applied. **Forbidden:** deferring post-open fill to a later turn without developer **`defer-pr`** or exception path.
+5. **Forbidden:** **`gh pr edit`** before the PR exists; **`gh pr edit`** with empty **Summary** / **Why**; ending [## Completion (inline)](#completion-inline) while the GitHub body is still the create-time placeholder.
 
 ## PR prompt fallback
 
@@ -347,22 +363,25 @@ The integration line is `<integration-line>`
 
 Use past tense for the PR title.
 
-Here is a summary of the changes as a starting point for the PR description (verify against the diff and adjust as needed). Use the canonical scaffold from create-pr § PR body assembly:
+Here is a summary of the changes as a starting point for the PR description (verify against the diff and adjust as needed). Use the PR #93 scaffold from create-pr § PR body assembly; open with `gh pr create` (placeholder body), then `gh pr edit` with the full body per § Post-open body fill:
 
-## Reason for change
-- [ ] (one primary driver checked)
-**Summary:** (why now)
+## Summary
+(one paragraph)
 
-## Justification
-- **User / field impact:**
-- **Documentation impact:**
-- **Risk & rollback:**
+## Why
+(motivation)
 
 ## What changed
-(bullets — behaviour, APIs, schema, config)
+(bullets)
 
-## Verification
-(how to confirm — tests or observable behaviour)
+## Not in this PR
+(when applicable)
+
+## Plan lineage
+(when plan-anchored)
+
+## How to verify
+(pointers)
 
 Also include when applicable:
 - Not in this PR (deferrals, parent scope left out on purpose)
