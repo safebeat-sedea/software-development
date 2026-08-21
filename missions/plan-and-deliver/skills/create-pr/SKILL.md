@@ -228,13 +228,92 @@ When pre-PR validation and push preconditions pass:
 
 If creation is not authorized, produce the PR prompt below and set `continuationStatus: "active"` — do not call `gh pr create`.
 
+## PR body assembly (binding)
+
+Agent-authored PR bodies **must** use the canonical heading scaffold below — the **coding-agent skill surface** for Reason/Justification (PRD §5.1 / §5.6 layer B). Do **not** rely on product-repo `pull_request_template.md` files for agent-opened PRs; **`create-pr`** owns body assembly on this lane.
+
+### Heading scaffold
+
+Assemble **`--body`** markdown in this order:
+
+```markdown
+## Reason for change
+
+<!-- One primary driver — pick the best-fit category and expand in 1–3 sentences. -->
+
+- [ ] Customer request / support ticket
+- [ ] Security / vulnerability
+- [ ] Performance / scalability
+- [ ] Bug fix / defect
+- [ ] Compliance / QMS / regulatory
+- [ ] Feature / product requirement
+- [ ] Tech debt / maintainability (name the outcome — not "refactor")
+- [ ] Other: ___
+
+**Summary:** _Why is this change being made now? Link ticket/VER/PM item when applicable._
+
+## Justification
+
+<!-- Why is this change acceptable to merge? -->
+
+- **User / field impact:** _Who or what is affected? New/changed fields, defaults, UX, or runtime behavior._
+- **Documentation impact:** _Link, repo path, or `none` — do not invent._
+- **Risk & rollback:** _What could go wrong; how to revert or mitigate._
+
+## What changed
+
+<!-- Behaviour, APIs, schema, config — proportional to PR size. -->
+
+## Verification
+
+<!-- How to confirm — tests, monitors, manual steps. Pointer only; no separate test-plan essay. -->
+```
+
+**Forbidden:** empty sections; placeholder-only bodies; parallel section names that duplicate this scaffold (for example a separate “Why this slice” block **and** Reason for change with conflicting content).
+
+### Plan → body mapping (plan-anchored)
+
+When **`targetPlanPath`** resolves, read the PR plan and map:
+
+| Body heading | Plan source | Notes |
+|--------------|-------------|--------|
+| **Reason for change** — driver + **Summary** | §2 Background; §4 Reasoning (motivation) | Pick **one** primary driver checkbox; mark `[x]` in the emitted body |
+| **Justification** | §4 Reasoning; rule **10** Benefit; §3 Change scope (impact) | User/field impact from scope; docs from plan or infer `"none"` only with evidence |
+| **What changed** | §3 Change scope; diff | Align with committed diff |
+| **Verification** | §6 Tests; §7 deploy pointers | Pointer to tests or §7 steps — not a full deploy essay |
+
+When **not** plan-anchored, derive from diff + session context; open [Ask-when-needed gate](#ask-when-needed-gate-binding) when required fields are missing or uncertain.
+
+### Ask-when-needed gate (binding)
+
+**Default:** auto-fill all scaffold fields from plan, diff, and session when mapping is **unambiguous** — **no** developer prompt on every PR.
+
+**Stop before `gh pr create`** and call **`mission_control_present_structured_choice`** on **`coding-session`** when **any** hold:
+
+1. A required sub-field **cannot be inferred** (no plan Background, ad-hoc session with no motivation).
+2. The agent is **uncertain** (ambiguous driver category, unclear documentation impact, plan vs diff conflict).
+3. The developer named **`defer-pr`**, **`emit-pr-prompt`**, or challenged body content in the **same** message.
+
+USER_CHECKPOINT — provide missing or uncertain PR template fields.
+
+| Option id | Label (brief) | Act |
+|-----------|---------------|-----|
+| `provide-pr-template-fields` | Provide missing or uncertain fields | Developer supplies values; re-assemble body; then continue to **`gh pr create`** when complete |
+| `defer-pr` | Defer PR — fill plan first | `continuationStatus: "active"`; no **`gh pr create`** |
+| `more-details` | More details for option _ | Elaborate; re-open gate |
+
+**Forbidden:** `gh pr create` with empty Reason/Justification; inventing driver category or doc impact; prompting when plan + diff supply unambiguous values; opening **`gh pr create`** without developer authorization at [Pre-gh authorization gate](#pre-gh-authorization-gate-binding) or explicit **`authorize-create-pr`** pick (Checkpoint exception path only when criteria pass **and** developer did not defer PR creation in the **same** message).
+
+**Checkpoint — auto-fill (binding):** When plan-anchored mapping is complete and ask-when-needed triggers are **false**, assemble the body and proceed to **`gh pr create`** on the authorized path without this modal.
+
 ## `gh pr create` procedure (binding)
 
 When authorized to open the PR ([Gate](#gate), [Checkpoint — auto-advance `authorize-create-pr`](#checkpoint--auto-advance-authorize-create-pr-binding), or [Pre-gh authorization gate](#pre-gh-authorization-gate-binding)):
 
 1. **Derive PR base branch** — From inline **`baseRef`** (e.g. `origin/main`): strip a leading `origin/` prefix → **`<prBaseBranch>`** (e.g. `main`). When **`baseRef`** uses another remote prefix, strip that remote name and `/` only.
 2. **Pre-create self-check** — `gh api repos/{owner}/{repo} --jq .default_branch`. When the result ≠ **`<prBaseBranch>`**, **`--base` is mandatory** (always safe to pass even when equal).
-3. **Create PR** — From **`worktreePath`**:
+3. **Assemble body** — Run [PR body assembly (binding)](#pr-body-assembly-binding); pass [Ask-when-needed gate](#ask-when-needed-gate-binding) when required. **Forbidden:** skip assembly and reuse legacy rule **20** bullet-only starters without Reason/Justification headings.
+4. **Create PR** — From **`worktreePath`**:
 
 ```bash
 gh pr create \
@@ -244,9 +323,9 @@ gh pr create \
   --body "<body>"
 ```
 
-Body per rule **20** § *Comprehensive PR descriptions*.
+Body per [PR body assembly (binding)](#pr-body-assembly-binding) — same Reason / Justification / What changed / Verification scaffold.
 
-4. **Forbidden:** bare **`gh pr create`** without **`--base`** — GitHub repository **`default_branch`** may differ on fork layouts.
+5. **Forbidden:** bare **`gh pr create`** without **`--base`** — GitHub repository **`default_branch`** may differ on fork layouts.
 
 Cross-ref: rule **20** § *Hosting-repo PR base branch (binding)*. **Center-repo PRs:** [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Center-repo worktree procedure*; **`development-process.md`** § *Center-repo PR base (binding)*.
 
@@ -257,7 +336,7 @@ When direct PR creation is not authorized, generate a copy-paste prompt for a fu
 1. **Current worktree name ref**: `git branch --show-current`
 2. **Integration line**: from `git merge-base` / tracking parent (e.g. `main`).
 3. **Repo URL**: `git remote get-url origin`
-4. **Changes summary**: `git diff <base>...HEAD` plus session context — **reviewer-complete** per rule **20** § *Comprehensive PR descriptions*.
+4. **Changes summary**: `git diff <base>...HEAD` plus session context — assemble per [PR body assembly (binding)](#pr-body-assembly-binding).
 
 Print inside a fenced code block:
 
@@ -268,14 +347,26 @@ The integration line is `<integration-line>`
 
 Use past tense for the PR title.
 
-Here is a summary of the changes as a starting point for the PR description (verify against the diff and adjust as needed). Use bullets; keep it proportional to PR size but do not omit reasoning:
+Here is a summary of the changes as a starting point for the PR description (verify against the diff and adjust as needed). Use the canonical scaffold from create-pr § PR body assembly:
 
-- Why this slice / motivation (enough that a reviewer can tell intent vs mistake)
-- What changed (behaviour, APIs, schema, config)
+## Reason for change
+- [ ] (one primary driver checked)
+**Summary:** (why now)
+
+## Justification
+- **User / field impact:**
+- **Documentation impact:**
+- **Risk & rollback:**
+
+## What changed
+(bullets — behaviour, APIs, schema, config)
+
+## Verification
+(how to confirm — tests or observable behaviour)
+
+Also include when applicable:
 - Not in this PR (deferrals, parent scope left out on purpose)
-- Plan lineage (if applicable): path or slug to `.sedea/operations/**/plans/<slug>.plan.md` and optional pointer to Mermaid in the plan
-- Intentional non-changes (if any)
-- How to verify (which tests or observable behaviour — no separate test-plan essay)
+- Plan lineage: path or slug to `.sedea/operations/**/plans/<slug>.plan.md`
 ```
 
 ## Result contract
