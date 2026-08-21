@@ -569,14 +569,20 @@ PRs are reviewed by AI agents who compare the description against the code and t
 
 ### A PR-creating agent prompt and proportional context
 
-The **`create-pr` protocol branch** ([`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md)) produces the text **a PR-creating agent** uses to open the PR. That block must give reviewer agents enough **reasoning**, not only diff facts — otherwise comments are often unactionable. **Scale length to PR size**: a small PR gets a **shorter** write-up, but it must still be **complete for one concern**.
+The **`create-pr` protocol branch** ([`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md)) produces the text **a PR-creating agent** uses for the **final** PR description. Flow: **`gh pr create`** with minimal placeholder body, then **`gh pr edit`** with the PR #93 narrative scaffold ([`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md) § *Post-open body fill (binding)*; exemplar: [safebeat/app#93](https://github.com/safebeat/app/pull/93)). That final body must give reviewer agents enough **reasoning**, not only diff facts — otherwise comments are often unactionable. **Scale length to PR size**: a small PR gets a **shorter** write-up, but it must still be **complete for one concern**.
 
-Every description starter (including on the first push in this cadence) should cover, in whatever brevity fits the PR:
+**Agent body headings (binding):** **Summary**, **Why**, **What changed**, **Not in this PR** (when applicable), **Plan lineage** (when plan-anchored), **How to verify** — same section order as [safebeat/app#93](https://github.com/safebeat/app/pull/93). Product-repo GitHub templates use Reason for change / Justification headings for **human** compose UI (PRD §5.1); agent **`gh pr edit`** bodies use the PR #93 shape unless the developer explicitly requests template-heading output.
 
-- **Why this slice** — motivation and how it fits the larger goal (enough to judge intent vs. mistake, especially for improvement slices, guards, or "looks redundant" code).
-- **Not in this PR** — deferrals, follow-ups, or parent-epic scope left out on purpose.
-- **Plan lineage (when applicable)** — one line with plan slug or path (e.g. `.sedea/operations/**/plans/<slug>.plan.md`) and, if useful, "see Mermaid in plan" so intent is not trapped in chat.
-- **Verification pointer** — how to confirm behavior (which tests or observable behavior); still no separate "test plan" essay.
+Map plan sections into these headings per **`create-pr`** § *Plan → body mapping*; ask-when-needed structured choice only when fields are missing or uncertain.
+
+Every description (after post-open fill) should cover, in whatever brevity fits the PR:
+
+- **Summary** — one paragraph on what the PR does.
+- **Why** — motivation and how it fits the larger goal (enough to judge intent vs. mistake).
+- **What changed** — behavioural/API/schema/config bullets aligned with the diff.
+- **Not in this PR** — deferrals and scope left out on purpose (omit when none).
+- **Plan lineage** — slug @ path when plan-anchored.
+- **How to verify** — tests or observable behaviour; still no separate test-plan essay.
 
 ## Hosting-repo PR base branch (binding)
 
@@ -585,7 +591,7 @@ When **`create-pr`** opens a PR on the **hosting repo** (or separate product rep
 1. Resolve **`<prBaseBranch>`** from inline **`baseRef`** — strip remote prefix (typically `origin/` → `main`).
 2. **`gh pr create`** **must** include **`--base "<prBaseBranch>" --head "<worktreeName>"`**. **Forbidden:** bare **`gh pr create`** without **`--base`**.
 3. **Pre-create self-check:** When **`gh api repos/<owner>/<repo> --jq .default_branch`** ≠ **`<prBaseBranch>`**, **`--base` is mandatory** (always safe to pass even when equal).
-4. Executable procedure: [`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md) § *`gh pr create` procedure (binding)*.
+4. Executable procedure: [`create-pr/SKILL.md`](../missions/plan-and-deliver/skills/create-pr/SKILL.md) § *`gh pr create` procedure (binding)* and § *Post-open body fill (binding)*.
 
 **Center-repo PRs** (content in a **center git repository**): rule **20** does **not** apply — use [`.sedea/centers/sedea/rules/3_center.mdc`](.sedea/centers/sedea/rules/3_center.mdc) § *Center-repo worktree procedure* and **`development-process.md`** § *Center-repo PR base (binding)*.
 
