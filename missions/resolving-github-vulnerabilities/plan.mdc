@@ -1,14 +1,15 @@
 ---
 description: >-
   Resolve GitHub vulnerability alerts with gh, apply recommended dependency
-  fixes per app backend/frontend README lockfile procedures, and ship via Software Development
+  fixes per scoped repo runbooks (app/ucsf Poetry/Yarn READMEs; infra and
+  ml-flows uv/npm/Terraform/Helm), and ship via Software Development
   coding-session.
 alwaysApply: false
 ---
 
 # Mission plan
 
-**Execution model:** Squad Leader inventories GitHub vulnerability alerts with **`gh`**, triages recommended fixes with the developer, applies (or plans) lockfile/code patches using each scoped product repo’s **`backend/README.md`** and **`frontend/README.md`** vulnerability sections, then reuses plan-and-deliver **`new-plan`** / **`pr-plan`** / **`coding-session`** to ship changes in **that product repo** when product changes are required. **Forbidden:** inventing patch procedures that contradict those READMEs; treating hosting **`HOSTING_ROOT`** / `safebeat-sedea/sedea-app` as the remediation tree; Squad Leader proposing dispatch resolution without documenting residual open alerts in scope; opening a vulnerability PR before a same-scope **`gh`** re-inventory confirms no missed in-scope alerts (or residuals are explicitly deferred); opening a vulnerability PR before required product-repo tests pass (or an explicit same-turn waiver).
+**Execution model:** Squad Leader inventories GitHub vulnerability alerts with **`gh`**, triages recommended fixes with the developer, applies (or plans) lockfile/code patches using each scoped repo’s documented procedures (app/ucsf **`backend/README.md`** / **`frontend/README.md`** vulnerability sections; **infra** npm / Terraform / Helm; **ml-flows** **uv** locks), then reuses plan-and-deliver **`new-plan`** / **`pr-plan`** / **`coding-session`** to ship changes in **that scoped GitHub repo** when code changes are required. **Forbidden:** inventing patch procedures that contradict those READMEs; treating hosting **`HOSTING_ROOT`** / `safebeat-sedea/sedea-app` as the remediation tree; Squad Leader proposing dispatch resolution without documenting residual open alerts in scope; opening a vulnerability PR before a same-scope **`gh`** re-inventory confirms no missed in-scope alerts (or residuals are explicitly deferred); opening a vulnerability PR before required product-repo tests pass (or an explicit same-turn waiver).
 
 **Skill reuse:** [`.sedea/centers/software-development/missions/plan-and-deliver/skills/`](.sedea/centers/software-development/missions/plan-and-deliver/skills/) — **`new-plan`**, **`pr-plan`**, **`coding-session`**, **`pr-review`**. Spawn contracts: [`.sedea/centers/software-development/missions/plan-and-deliver/skills/README.md`](.sedea/centers/software-development/missions/plan-and-deliver/skills/README.md). Low-complexity single-PR patches may follow [quick-fix](.sedea/centers/software-development/missions/quick-fix/plan.mdc) constraints (complexity ≤6) when the developer confirms.
 
@@ -17,8 +18,8 @@ alwaysApply: false
 | Constraint | Rule |
 |------------|------|
 | **Inventory source** | Prefer **`gh`** (`gh api` / Dependabot / code-scanning / advisory surfaces available to the authenticated user) over manual guesswork |
-| **Patch procedures** | Backend transitive lock patches: each product repo’s `backend/README.md` § *Vulnerability patches of transitive dependency directly in poetry.lock*. Frontend yarn.lock patches: that repo’s `frontend/README.md` § *Vulnerability version patches directly in yarn.lock*. Apply under the scoped **`safebeat/app`** or **`safebeat/ucsf-study`** tree — **not** hosting-repo `app/` paths. |
-| **Target apps** | Vulnerability inventory and remediation target GitHub repos **`safebeat/app`** and **`safebeat/ucsf-study` only**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target. Within each product repo, resolve backend/frontend (Poetry/Yarn) paths from **that** repo’s layout — not hosting-repo `app/` paths. Narrow to a single product (and optional severity/package filter) via the §3 scope pick or a clear opening remainder — **do not** inventory both products by default when the developer has not chosen. |
+| **Patch procedures** | **App/ucsf:** Backend Poetry patches per each product repo’s `backend/README.md` § *Vulnerability patches of transitive dependency directly in poetry.lock*; frontend Yarn patches per `frontend/README.md` § *Vulnerability version patches directly in yarn.lock* — under the scoped **`safebeat/app`** or **`safebeat/ucsf-study`** tree, **not** hosting-repo `app/` paths. **Infra / ml-flows:** Follow §5 *Extended ecosystem patch appendix* — do not substitute app README steps for uv/npm/Terraform/Helm alerts. |
+| **Target repositories** | Vulnerability inventory and remediation may target GitHub repos **`safebeat/app`**, **`safebeat/ucsf-study`**, **`safebeat/infra`**, and **`safebeat/ml-flows`**. **Forbidden:** treating the Sedea hosting repo (`safebeat-sedea/sedea-app` or this workspace’s **`HOSTING_ROOT`**) as an inventory or remediation target (edits land on the **scoped remote repo** via worktree/clone — not anonymous paths under hosting main). Within app/ucsf, resolve backend/frontend (Poetry/Yarn) from **that** repo’s layout. **`safebeat/ml-flows`** is **not** a hosting submodule — use a dedicated clone/worktree on **`safebeat/ml-flows`**. **`safebeat/infra`** may be edited via the **`infra/`** submodule remote when checked out. Narrow to one repo (and optional severity/package filter) via §3 scope pick or a clear opening remainder — **do not** inventory all repos by default when the developer has not chosen. |
 | **Host shell** | Mission Control Shell has **no Python** — run Poetry/Yarn via documented host tooling or interactive terminal presets when credentials/interactive auth are required; do not invent `python3` workflows |
 | **Ship chain** | Product lockfile/code changes ship via detached **`coding-session`** (same order as plan-and-deliver §8) — do not duplicate ship-chain steps here |
 | **Vulnerability PR metadata** | When §8–§9 open a product-repo PR for this mission: **`--title`** must be `Vulnerabilities Fix - (YYYY-MM-DD)` (UTC calendar day of `gh pr create`). **`--body`** must be a markdown list of applied fixes as `package from -> to` (e.g. `aiohttp 5.1.2 -> 5.1.6`); optional one-line summary above the list. **Forbidden:** appending a “Made with Cursor” (or equivalent IDE) tag/footer; inventing titles that omit the date suffix. This mission binding **supersedes** generic `create-pr` past-tense title guidance for these PRs only. |
@@ -42,8 +43,8 @@ Detached **`coding-session`** ship chains reuse plan-and-deliver mechanics. Afte
 
 1. **Branch** — At mission start, collect a product-repo **branch name** derived from the developer’s **ClickUp ticket** and carry it through remediation / ship.
 2. **Inventory** — Using **`gh`**, list open vulnerability alerts (Dependabot, security advisories, and/or code scanning as available) for the scoped GitHub repo(s), including recommended fix versions when GitHub supplies them.
-3. **Triage** — With the developer, classify each in-scope alert: apply now, defer, or out-of-scope; record package ecosystem (Poetry backend vs Yarn frontend) and target path under the monorepo.
-4. **Remediate** — Apply approved patches following the backend/frontend README vulnerability procedures; for multi-file or higher-complexity work, plan and ship via **`new-plan`** → **`pr-plan`** → **`coding-session`**.
+3. **Triage** — With the developer, classify each in-scope alert: apply now, defer, or out-of-scope; record package ecosystem (`poetry`, `yarn`, `uv`, `npm`, `terraform`, `helm-chart`, or `other`) and target path/manifest inside the scoped repo.
+4. **Remediate** — Apply approved patches following repo-specific runbooks (app/ucsf README procedures; §5 extended appendix for infra/ml-flows); for multi-file or higher-complexity work, plan and ship via **`new-plan`** → **`pr-plan`** → **`coding-session`**.
 5. **Verify and close** — Re-check alerts with **`gh`** **after fixes and before opening the PR** (§6), run required product-repo **tests** (§7), then re-check after merge (or document residual risk); Squad Leader proposes dispatch resolution when in-scope items are fixed or explicitly deferred.
 
 ## Squad operations
@@ -144,8 +145,8 @@ USER_CHECKPOINT — collect ClickUp ticket and confirm derived branch name when 
 
 - **Type:** Simple skill execution (leader inline) + branching gate
 - **Intent:** Lock remediation scope, then produce an alert inventory with recommended fixes where GitHub provides them.
-- **Inputs:** Opening remainder (optional); `branchName` from §2; structured **scope pick** below; Target apps constraint (`safebeat/app`, `safebeat/ucsf-study` only). **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**).
-- **Expected output:** `scopeFilter` (`productRepo`, `ecosystems`, `severityPolicy`, optional `packageFilter` / `severityBand`); `alertList` filtered to that scope (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`other`, `owner/repo`, path hint inside that product repo).
+- **Inputs:** Opening remainder (optional); `branchName` from §2; structured **scope pick** below; **Target repositories** constraint (§ Mission constraints). **Forbidden default:** hosting-repo `git remote` (`safebeat-sedea/sedea-app` / **`HOSTING_ROOT`**) as the alert repo.
+- **Expected output:** `scopeFilter` (`targetRepo`, `ecosystems`, `severityPolicy`, optional `packageFilter` / `severityBand`, optional `pathPrefix`); `alertList` filtered to that scope (id, package, severity, recommendedFix, ecosystem `poetry`|`yarn`|`uv`|`npm`|`terraform`|`helm-chart`|`other`, `owner/repo`, manifest/path hint inside that repo).
 - **Next-step resolution:** Scope confirmed + non-empty list (or explicit empty-with-confirm) → §4. Auth/tool failure → USER_CHECKPOINT (auth recover). Scope needs free-text → collect then inventory.
 
 USER_CHECKPOINT — pick inventory / remediation scope before `gh` inventory (when opening remainder does not already name a clear filter).
@@ -158,6 +159,9 @@ USER_CHECKPOINT — pick inventory / remediation scope before `gh` inventory (wh
 | `ucsf-backend-frontend` | `safebeat/ucsf-study` — backend + frontend (all severities) |
 | `app-without-major` | `safebeat/app` — backend + frontend, **without major** (skip major severity / major-version bumps) |
 | `ucsf-without-major` | `safebeat/ucsf-study` — backend + frontend, **without major** |
+| `infra-repo` | `safebeat/infra` — all ecosystems in repo (Terraform, Helm, npm actions, …) |
+| `ml-flows-repo` | `safebeat/ml-flows` — all **uv** lockfiles (root, jobs-server, job-runner) |
+| `infra-npm-monitoring` | `safebeat/infra` — `.github/actions/monitor-security-alerts` npm lock only |
 | `user-specified` | User-specified — e.g. only `aiohttp`, or only all **critical** |
 
 **On `user-specified`:** open a follow-up structured choice / prompt for package name(s) and/or severity band (`critical` / `high` / …); map to `packageFilter` and/or `severityBand`; then run inventory. **Do not** invent filters from silence.
@@ -167,9 +171,9 @@ USER_CHECKPOINT — recover `gh` auth when inventory cannot run after scope is s
 **Procedure**
 
 1. If opening remainder already names a clear product + filter, map to `scopeFilter` and skip the scope-pick gate; otherwise open the scope pick above.
-2. Resolve inventory repo(s) from `scopeFilter.productRepo` only (`safebeat/app` or `safebeat/ucsf-study`). **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target. **Forbidden:** defaulting to inventory **both** product repos when the scope pick (or clear remainder) already selected one product.
-3. For the scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`. Apply `severityPolicy` / `packageFilter` / `severityBand` before §4 triage.
-4. Map each alert to backend (Poetry) vs frontend (Yarn) using paths **inside that product repo’s layout**; otherwise leave ecosystem TBD for §4. Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
+2. Resolve inventory repo(s) from `scopeFilter.targetRepo` only (`safebeat/app`, `safebeat/ucsf-study`, `safebeat/infra`, or `safebeat/ml-flows` per scope pick). **Forbidden:** resolving scope from the hosting clone’s `git remote` or treating **`HOSTING_ROOT`** as an alert target. **Forbidden:** defaulting to inventory **multiple** repos when the scope pick (or clear remainder) already selected one repo.
+3. For the scoped repo, query alerts with **`gh`** (Dependabot / code-scanning / advisory surfaces available to the token). Prefer machine-readable JSON; tag each row with `owner/repo`. Apply `severityPolicy` / `packageFilter` / `severityBand` / `pathPrefix` before §4 triage. Reference pattern: `infra/.github/workflows/daily-monitoring.yaml` (org-level Dependabot queries) when a repo-local inventory is insufficient — still scoped to the pick.
+4. Map each alert to ecosystem using manifest paths **inside that repo’s layout** (Poetry/Yarn for app/ucsf; **uv.lock** paths for ml-flows; **package-lock.json** for infra npm; Terraform lock / Helm chart refs for infra). Do **not** assume hosting-repo `app/backend` or `app/frontend` paths.
 5. Summarize in **`displayMarkdown`** (or brief prose) and continue to §4.
 
 ### 4. Triage with the developer
@@ -185,7 +189,7 @@ USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguo
 **Procedure**
 
 1. Present inventory with recommended fixes.
-2. Developer picks alerts to apply; confirm Poetry vs Yarn procedure per alert.
+2. Developer picks alerts to apply; confirm ecosystem-specific procedure per alert (§5 binding + extended appendix).
 3. Continue to §5 for `applySet`.
 
 ### 5. Remediate per README procedures
@@ -193,7 +197,7 @@ USER_CHECKPOINT — approve apply vs defer sets (and ecosystem/path when ambiguo
 - **Type:** Branching logic
 - **Intent:** Apply approved patches or hand off to planning/ship.
 - **Inputs:** `applySet`; `branchName` from §2; for each alert’s `owner/repo`, that product repo’s `backend/README.md` and/or `frontend/README.md` vulnerability sections (see **Patch procedures**).
-- **Expected output:** Applied lockfile/code changes in a **product-repo** worktree for `safebeat/app` or `safebeat/ucsf-study` on **`branchName`**, or spawn inputs for §8 targeting that product repo and **`branchName`**. **Forbidden:** defaulting remediation writes to hosting-repo `app/` under **`HOSTING_ROOT`**; inventing a different product branch name when §2 already confirmed `branchName`.
+- **Expected output:** Applied lockfile/code changes in a **scoped-repo** worktree for the selected `targetRepo` on **`branchName`**, or spawn inputs for §8 targeting that repo and **`branchName`**. **Forbidden:** defaulting remediation writes to hosting-repo paths under **`HOSTING_ROOT`**; inventing a different branch name when §2 already confirmed `branchName`.
 - **Next-step resolution:** Patches applied on the product branch → §6 Pre-PR re-check. Handoff to planning without local apply → §8 Plan PR (coding-session must still satisfy §6–§7 before `gh pr create`). Procedure blocked → USER_CHECKPOINT below.
 
 USER_CHECKPOINT — choose how to proceed when README procedure fails or scope exceeds a single PR.
@@ -212,7 +216,18 @@ USER_CHECKPOINT — choose how to proceed when README procedure fails or scope e
 3. Delete the `checksum` line.
 4. Run `yarn install --mode update-lockfile`.
 
-**Product-repo ship cadence:** Before tracked writes in `safebeat/app` or `safebeat/ucsf-study`, use that product repo’s worktree / ship flow via §8–§9 **`coding-session`** on **`branchName`** from §2 (same order as plan-and-deliver). **Forbidden:** treating hosting-repo **`WORKTREE_ROOT`** setup as the place to edit product lockfiles unless the developer explicitly scopes a hosting gitlink-only change.
+**Scoped-repo ship cadence:** Before tracked writes in the scoped GitHub repo, use that repo’s worktree / ship flow via §8–§9 **`coding-session`** on **`branchName`** from §2 (same order as plan-and-deliver). **ml-flows:** clone/worktree **`safebeat/ml-flows`** explicitly — not assumed from hosting workspace folders. **infra:** submodule remote **`safebeat/infra`** (compliance tiers for phi vs non-phi stacks still apply). **Forbidden:** treating hosting-repo **`WORKTREE_ROOT`** setup as the place to edit scoped-repo lockfiles unless the developer explicitly scopes a hosting gitlink-only change.
+
+#### Extended ecosystem patch appendix (binding for infra & ml-flows)
+
+| Ecosystem | Target repo | Procedure (summary) |
+|-----------|-------------|---------------------|
+| **uv** | `safebeat/ml-flows` | Bump dependency in the affected **`uv.lock`** (root, `jobs-server/`, `job-runner/` as tagged in triage); use documented **uv** lock workflow in that repo (author README section if missing). Keep multiple locks consistent when one package spans manifests. |
+| **npm** | `safebeat/infra` | In `.github/actions/monitor-security-alerts/` (or path from alert): update **`package-lock.json`**, run **`npm ci`** / documented test script when present. |
+| **terraform** | `safebeat/infra` | Provider bumps via affected stack’s **`.terraform.lock.hcl`** + **`terraform init -upgrade`** per `infra/README.md` and stack policy; record phi vs non-phi stack in triage. |
+| **helm-chart** | `safebeat/infra` | Chart/image version bumps in modules (e.g. jobs / MLflow / Prefect pins in Terraform); verify with **`terraform validate`** / org apply policy — defer when apply requires human approval. |
+
+**Helm/image CVEs** not surfaced as Dependabot lock alerts may be **deferred** with documented advisory links; optional code-scanning inventory when available.
 
 When complexity or blast radius warrants a formal PR plan (multiple packages, tests, or >6 complexity), continue toward §8 after §6–§7 when patches are already applied, or §8 directly when coding-session will apply patches. When the developer already authorized a minimal single-PR path, still use §8 so **`coding-session`** owns the ship chain.
 
@@ -243,19 +258,19 @@ USER_CHECKPOINT — recover `gh` auth when pre-PR re-check cannot run.
 
 - **Type:** Simple skill execution (leader inline or coding-session lane) + branching gate
 - **Intent:** After patches are on the product branch and §6 has `proceed-to-pr` (or residuals were explicitly deferred), run the **product-repo** test suite for ecosystems touched by `applySet` **before** `gh pr create`.
-- **Inputs:** `scopeFilter.productRepo` (`safebeat/app` | `safebeat/ucsf-study`); ecosystems in `applySet` (`poetry` / `yarn`); product worktree path where patches live; `branchName` from §2.
+- **Inputs:** `scopeFilter.targetRepo`; ecosystems in `applySet` (`poetry` / `yarn` / `uv` / `npm` / `terraform` / `helm-chart`); scoped-repo worktree path where patches live; `branchName` from §2.
 - **Expected output:** `prePrTestReport` (commands run, exit codes, ecosystems covered); decision `tests-pass` | `tests-fail`.
 - **Next-step resolution:**
   - `tests-pass` → §8 Plan PR / allow `gh pr create`.
   - `tests-fail` or blocked env → USER_CHECKPOINT (fix / re-run / waive / defer ship) — **forbidden** to open the PR while required tests fail unless the developer explicitly waives in structured choice this turn.
-- **Command source (binding):** Prefer that product repo’s documented test entrypoints (backend/frontend README, package scripts, or CI workflow commands for the touched paths). **Forbidden:** inventing ad-hoc test commands that contradict those docs; running hosting-repo **`HOSTING_ROOT`** tests as a substitute for the product repo under remediation.
+- **Command source (binding):** Prefer the scoped repo’s documented test/validate entrypoints (app/ucsf backend/frontend README; ml-flows project tests; infra **`npm test`** in monitor action when present; **`terraform validate`** for touched stacks). **Forbidden:** inventing ad-hoc commands that contradict those docs; running hosting-repo **`HOSTING_ROOT`** tests as a substitute for the repo under remediation. Hosting **`.cursor/dev-deps-profiles.yaml`** does not today cover infra/ml-flows — use per-repo documented commands until profiles are added in a separate change.
 
 USER_CHECKPOINT — when required tests fail or cannot run: fix-and-retest vs waive-and-proceed (document residual risk) vs defer ship.
 
 **Procedure**
 
 1. Confirm §6 `proceed-to-pr` (or explicit residual deferral) is recorded for this ship slice.
-2. Map `applySet` ecosystems to backend (Poetry) and/or frontend (Yarn) test roots **inside the product repo**.
+2. Map `applySet` ecosystems to documented test/validate roots **inside the scoped repo**.
 3. Run documented tests for each touched ecosystem; capture exit codes.
 4. Summarize in **`displayMarkdown`**.
 5. On all-required pass → `tests-pass` and continue to §8 (or allow `gh pr create` on the coding-session lane). On failure / blocked → open the gate above — do **not** create the PR.

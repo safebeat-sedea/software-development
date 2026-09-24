@@ -1,10 +1,12 @@
 name: Resolving GitHub Vulnerabilities
 description: >-
   Use GitHub CLI to inventory Dependabot / advisory / code-scanning alerts and
-  recommended fixes, then apply dependency patches per app backend and frontend
-  README procedures and ship through Software Development coding-session.
+  recommended fixes, then apply dependency patches per repo-specific runbooks
+  (Poetry/Yarn app READMEs; uv, npm, Terraform, Helm for infra and ml-flows)
+  and ship through Software Development coding-session.
 commands:
   - phrase: resolve github vulnerabilities
     description: >-
       Check GitHub vulnerability alerts with gh, triage recommended fixes, and
-      patch backend (Poetry) / frontend (Yarn) lockfiles per app README guidance.
+      patch lockfiles and dependency pins per scoped repo procedures (app,
+      ucsf-study, infra, ml-flows).
